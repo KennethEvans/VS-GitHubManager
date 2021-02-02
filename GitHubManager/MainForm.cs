@@ -1,9 +1,11 @@
-﻿using KEUtils.Utils;
+﻿using KEUtils.About;
+using KEUtils.Utils;
 using Octokit;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GitHubManager {
@@ -18,9 +20,11 @@ namespace GitHubManager {
         public static readonly string GitHubIdentity = Assembly
             .GetEntryAssembly()
             .GetCustomAttribute<AssemblyProductAttribute>()
-            .Product;
+            // Doesn't handle blanks in the product name
+            .Product.Replace(" ","");
         private GitHubClient client;
         public User CurrentUser;
+        private List<Repo> repoList;
 
         public MainForm() {
             InitializeComponent();
@@ -52,7 +56,7 @@ namespace GitHubManager {
                 client = new GitHubClient(new ProductHeaderValue(GitHubIdentity));
                 if (credentials == null) {
                     CurrentUser = null;
-                    WriteInfo("Authentication=<None>");
+                    WriteInfo("Authentication=None");
                     return;
                 }
 
@@ -102,6 +106,18 @@ namespace GitHubManager {
             Close();
         }
 
+        private void OnAboutClick(object sender, EventArgs e) {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            Image image = null;
+            //try {
+            //    image = Image.FromFile(@".\Help\GPXViewer256.png");
+            //} catch (Exception ex) {
+            //    Utils.excMsg("Failed to get AboutBox image", ex);
+            //}
+            AboutBox dlg = new AboutBox(image, assembly);
+            dlg.ShowDialog();
+        }
+
         private async void OnGetRateLimitsClick(object sender, EventArgs e) {
             if (client == null) {
                 WriteInfo(NL + "Get Rate Limits: No client defined");
@@ -111,16 +127,94 @@ namespace GitHubManager {
             //  The "core" object provides your rate limit status except for the Search API.
             RateLimit coreRateLimit = miscellaneousRateLimit.Resources.Core;
             RateLimit searchRateLimit = miscellaneousRateLimit.Resources.Search;
-            StringBuilder builder = new StringBuilder(NL + "Rate Limits" + NL);
-            builder.Append("Core" + NL);
-            builder.Append($"  Limit={coreRateLimit.Limit}" + NL);
-            builder.Append($"  Remaining={coreRateLimit.Remaining}" + NL);
-            builder.Append($"  Reset={coreRateLimit.Reset.ToLocalTime()}" + NL);
-            builder.Append("Search" + NL);
-            builder.Append($"  Limit={searchRateLimit.Limit}" + NL);
-            builder.Append($"  Remaining={searchRateLimit.Remaining}" + NL);
-            builder.Append($"  Reset={searchRateLimit.Reset.ToLocalTime()}" + NL);
+            StringBuilder builder = new StringBuilder(NL + "Rate Limits");
+            builder.AppendLine("Core");
+            builder.AppendLine($"  Limit={coreRateLimit.Limit}");
+            builder.AppendLine($"  Remaining={coreRateLimit.Remaining}");
+            builder.AppendLine($"  Reset={coreRateLimit.Reset.ToLocalTime()}");
+            builder.AppendLine("Search");
+            builder.AppendLine($"  Limit={searchRateLimit.Limit}");
+            builder.AppendLine($"  Remaining={searchRateLimit.Remaining}");
+            builder.AppendLine($"  Reset={searchRateLimit.Reset.ToLocalTime()}");
+            WriteInfo(builder.ToString());
+        }
+
+        private async void OnGetRateRepositoriesClick(object sender, EventArgs e) {
+            if (client == null) {
+                WriteInfo(NL + "Get Repositories: No client defined");
+                return;
+            }
+            Credentials credentials = client.Credentials;
+            if (credentials == null) {
+                WriteInfo(NL + "Get Repositories: Cannot determine credentials");
+                return;
+            }
+            if (credentials.AuthenticationType == AuthenticationType.Anonymous) {
+                WriteInfo(NL + "Get Repositories: Must be authenticated");
+                return;
+            }
+            IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
+            repoList = new List<Repo>();
+            Repo repo;
+            foreach (Repository repos in repositories) {
+                repo = new Repo();
+                repo.Name = repos.Name;
+                repo.FullName = repos.FullName;
+                repo.Description = repos.Description;
+                repo.Size = repos.Size;
+                repo.Private = repos.Private;
+                repo.License = repos.License;
+                repo.Language = repos.Language;
+                repo.CreatedAt = repos.CreatedAt;
+                repo.UpdatedAt = repos.UpdatedAt;
+                repo.PushedAt = repos.PushedAt;
+                repoList.Add(repo);
+            }
+            StringBuilder builder = new StringBuilder(NL + "Repositories"
+                + $" ({repositories.Count})" + NL);
+            int n = 0;
+            foreach (Repo repo1 in repoList) {
+                builder.Append($"{++n} ");
+                builder.Append(repo1.ToString());
+            }
             WriteInfo(builder.ToString());
         }
     }
+
+    public class Repo {
+        public string Name { get; set; }
+        public string FullName { get; set; }
+        public string Description { get; set; }
+        public long Size { get; set; }
+        public bool Private { get; set; }
+        public string Language { get; set; }
+        public LicenseMetadata License { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset? PushedAt { get; set; }
+
+        public override string ToString() {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Name={Name}");
+            builder.AppendLine($"    FullName={FullName}");
+            builder.AppendLine($"    Description={Description}");
+            builder.AppendLine($"    Size={Size} KB");
+            builder.AppendLine($"    Private={Private}");
+            builder.AppendLine($"    Language={Language}");
+            if (License != null) {
+                builder.AppendLine($"    License={License.Name}");
+            } else {
+                builder.AppendLine($"    License=<NA>");
+            }
+            builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
+            builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
+            if (PushedAt.HasValue) {
+                builder.AppendLine($"    PushedAt={PushedAt.Value.ToLocalTime()}");
+            } else {
+                builder.AppendLine($"    PushedAt=Never");
+            }
+            return builder.ToString();
+        }
+    }
 }
+

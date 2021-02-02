@@ -4,6 +4,12 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <Description>If this program works, it was written by Kenneth Evans.</Description>
+    <Company>kenevans.net</Company>
+    <Copyright>Copyright © Kenneth Evans 2021</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Authors>GitHub Manager</Authors>
+    <Product>GitHub Manager</Product>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +34,11 @@
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
