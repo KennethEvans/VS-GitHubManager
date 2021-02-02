@@ -32,6 +32,8 @@ namespace GitHubManager {
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.toolStripMenuItemFile = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemRateLimits = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip.SuspendLayout();
@@ -53,7 +55,7 @@ namespace GitHubManager {
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelTop.Size = new System.Drawing.Size(800, 450);
+            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1576, 952);
             this.tableLayoutPanelTop.TabIndex = 0;
             // 
             // flowLayoutPanelButtons
@@ -63,7 +65,7 @@ namespace GitHubManager {
             this.flowLayoutPanelButtons.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.flowLayoutPanelButtons.Controls.Add(this.buttonClear);
             this.flowLayoutPanelButtons.Controls.Add(this.buttonQuit);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(304, 390);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(692, 892);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(192, 57);
             this.flowLayoutPanelButtons.TabIndex = 2;
@@ -98,7 +100,7 @@ namespace GitHubManager {
             this.textBox.Location = new System.Drawing.Point(3, 52);
             this.textBox.Multiline = true;
             this.textBox.Name = "textBox";
-            this.textBox.Size = new System.Drawing.Size(794, 332);
+            this.textBox.Size = new System.Drawing.Size(1570, 834);
             this.textBox.TabIndex = 3;
             // 
             // menuStrip
@@ -108,13 +110,15 @@ namespace GitHubManager {
             this.toolStripMenuItemFile});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(800, 49);
+            this.menuStrip.Size = new System.Drawing.Size(1576, 49);
             this.menuStrip.TabIndex = 4;
             this.menuStrip.Text = "menuStrip1";
             // 
             // toolStripMenuItemFile
             // 
             this.toolStripMenuItemFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItemRateLimits,
+            this.toolStripSeparator1,
             this.toolStripMenuItemExit});
             this.toolStripMenuItemFile.Name = "toolStripMenuItemFile";
             this.toolStripMenuItemFile.Size = new System.Drawing.Size(87, 45);
@@ -123,18 +127,33 @@ namespace GitHubManager {
             // toolStripMenuItemExit
             // 
             this.toolStripMenuItemExit.Name = "toolStripMenuItemExit";
-            this.toolStripMenuItemExit.Size = new System.Drawing.Size(230, 54);
+            this.toolStripMenuItemExit.Size = new System.Drawing.Size(383, 54);
             this.toolStripMenuItemExit.Text = "Exit";
             this.toolStripMenuItemExit.Click += new System.EventHandler(this.OnExitClick);
+            // 
+            // toolStripMenuItemRateLimits
+            // 
+            this.toolStripMenuItemRateLimits.Name = "toolStripMenuItemRateLimits";
+            this.toolStripMenuItemRateLimits.Size = new System.Drawing.Size(383, 54);
+            this.toolStripMenuItemRateLimits.Text = "Get Rate Limits";
+            this.toolStripMenuItemRateLimits.Click += new System.EventHandler(this.OnGetRateLimitsClick);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(380, 6);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(17F, 41F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1576, 952);
             this.Controls.Add(this.tableLayoutPanelTop);
             this.Name = "MainForm";
             this.Text = "GitHub Manager";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnFormClosing);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
+            this.Load += new System.EventHandler(this.OnFormLoad);
             this.tableLayoutPanelTop.ResumeLayout(false);
             this.tableLayoutPanelTop.PerformLayout();
             this.flowLayoutPanelButtons.ResumeLayout(false);
@@ -156,6 +175,8 @@ namespace GitHubManager {
         private System.Windows.Forms.MenuStrip menuStrip;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemFile;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemExit;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemRateLimits;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
     }
 }
 
