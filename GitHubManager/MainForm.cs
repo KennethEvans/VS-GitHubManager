@@ -4,6 +4,7 @@ using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -119,6 +120,37 @@ namespace GitHubManager {
             dlg.ShowDialog();
         }
 
+        private void OnSaveCsvClick(object sender, EventArgs e) {
+            if (repoList == null || repoList.Count == 0) {
+                WriteInfo(NL + "Save CSV: No repositories to save");
+                return;
+            }
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Title = "Select CSV file";
+            dlg.FileName = "RepositoryInfo-" + DateTime.Now.ToString("yyyy-MM-dd") + ".csv";
+            dlg.Filter = "CSV|*.csv";
+            if (dlg.ShowDialog() == DialogResult.OK) {
+                SaveCsv(dlg.FileName);
+            }
+        }
+
+        private void SaveCsv(string fileName) {
+            try {
+                using (StreamWriter sw = new StreamWriter(fileName)) {
+                    sw.WriteLine(Repo.CsvHeader());
+                    foreach (Repo repo in repoList) {
+                        sw.WriteLine(repo.CsvRow());
+                    }
+                }
+                WriteInfo(NL + "SaveCsv: Wrote " + fileName);
+            } catch (Exception ex) {
+                string msg = "SaveCsv: Error writing CSV file " + fileName;
+                WriteInfo(NL + msg);
+                Utils.excMsg(msg, ex);
+                return;
+            }
+        }
+
         private async void OnGetRateLimitsClick(object sender, EventArgs e) {
             if (client == null) {
                 WriteInfo(NL + "Get Rate Limits: No client defined");
@@ -175,20 +207,8 @@ namespace GitHubManager {
             Repo repo;
             List<Task> taskList = new List<Task>();
             foreach (Repository repos in repositories) {
-                repo = new Repo();
+                repo = new Repo(repos);
                 repoList.Add(repo);
-                repo.Name = repos.Name;
-                repo.FullName = repos.FullName;
-                repo.Description = repos.Description;
-                repo.Size = repos.Size;
-                repo.Private = repos.Private;
-                repo.License = repos.License;
-                repo.Language = repos.Language;
-                repo.CreatedAt = repos.CreatedAt;
-                repo.UpdatedAt = repos.UpdatedAt;
-                repo.PushedAt = repos.PushedAt;
-                repo.OpenIssuesCount = repos.OpenIssuesCount;
-                repo.ForksCount = repos.ForksCount;
                 taskList.Add(GetReleases(client, repo, repos));
                 taskList.Add(GetReadme(client, repo, repos));
             }
@@ -205,6 +225,24 @@ namespace GitHubManager {
     }
 
     public class Repo {
+        public static readonly string CSV_SEP = ",";
+        public static readonly string[] HEADER = {
+             "Name",
+             "FullName",
+             "Description",
+             "Size (KB)",
+             "Private",
+             "Language",
+             "License",
+             "Readme",
+             "ReleaseCount",
+             "OpenIssuesCount",
+             "ForksCount",
+             "CreatedAt",
+             "UpdatedAt",
+             "PushedAt",
+         };
+
         public string Name { get; set; }
         public string FullName { get; set; }
         public string Description { get; set; }
@@ -219,6 +257,21 @@ namespace GitHubManager {
         public int ForksCount { get; set; }
         public int ReleaseCount { get; set; }
         public Readme Readme { get; set; }
+
+        public Repo(Repository repos) {
+            Name = repos.Name;
+            FullName = repos.FullName;
+            Description = repos.Description;
+            Size = repos.Size;
+            Private = repos.Private;
+            License = repos.License;
+            Language = repos.Language;
+            CreatedAt = repos.CreatedAt;
+            UpdatedAt = repos.UpdatedAt;
+            PushedAt = repos.PushedAt;
+            OpenIssuesCount = repos.OpenIssuesCount;
+            ForksCount = repos.ForksCount;
+        }
 
         public override string ToString() {
             StringBuilder builder = new StringBuilder();
@@ -250,6 +303,52 @@ namespace GitHubManager {
             }
             return builder.ToString();
         }
+
+        public static string CsvHeader() {
+            StringBuilder builder = new StringBuilder();
+            foreach (string col in HEADER) {
+                builder.Append(col).Append(CSV_SEP);
+            }
+            // Remove the last separator
+            string line = builder.ToString();
+            line = line.Substring(0, line.Length - CSV_SEP.Length);
+            return line;
+        }
+
+        public string CsvRow() {
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"{Name}").Append(CSV_SEP);
+            builder.Append($"{FullName}").Append(CSV_SEP);
+            builder.Append($"\"{Description}\"").Append(CSV_SEP);
+            builder.Append($"{Size}").Append(CSV_SEP);
+            builder.Append($"{Private}").Append(CSV_SEP);
+            builder.Append($"{Language}").Append(CSV_SEP);
+            if (License != null) {
+                builder.Append($"{License.Name}").Append(CSV_SEP);
+            } else {
+                builder.Append($"").Append(CSV_SEP);
+            }
+            if (Readme != null) {
+                builder.Append($"{Readme.Name}").Append(CSV_SEP);
+            } else {
+                builder.Append($"").Append(CSV_SEP);
+            }
+            builder.Append($"{ReleaseCount}").Append(CSV_SEP);
+            builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
+            builder.Append($"{ForksCount}").Append(CSV_SEP);
+            builder.Append($"{CreatedAt.ToLocalTime()}").Append(CSV_SEP);
+            builder.Append($"{UpdatedAt.ToLocalTime()}").Append(CSV_SEP);
+            if (PushedAt.HasValue) {
+                builder.Append($"{PushedAt.Value.ToLocalTime()}").Append(CSV_SEP);
+            } else {
+                builder.Append($"").Append(CSV_SEP);
+            }
+            // Remove the last separator
+            string line = builder.ToString();
+            line = line.Substring(0, line.Length - CSV_SEP.Length);
+            return line;
+        }
+
     }
 }
 

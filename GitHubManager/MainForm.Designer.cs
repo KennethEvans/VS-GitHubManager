@@ -35,6 +35,7 @@ namespace GitHubManager {
             this.toolStripMenuItemRateLimits = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemSaveCsv = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
@@ -124,6 +125,7 @@ namespace GitHubManager {
             this.toolStripMenuItemFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemRepositories,
             this.toolStripMenuItemRateLimits,
+            this.toolStripMenuItemSaveCsv,
             this.toolStripSeparator1,
             this.toolStripMenuItemExit});
             this.toolStripMenuItemFile.Name = "toolStripMenuItemFile";
@@ -155,6 +157,13 @@ namespace GitHubManager {
             this.toolStripMenuItemExit.Size = new System.Drawing.Size(402, 54);
             this.toolStripMenuItemExit.Text = "Exit";
             this.toolStripMenuItemExit.Click += new System.EventHandler(this.OnExitClick);
+            // 
+            // toolStripMenuItemSaveCsv
+            // 
+            this.toolStripMenuItemSaveCsv.Name = "toolStripMenuItemSaveCsv";
+            this.toolStripMenuItemSaveCsv.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemSaveCsv.Text = "Save CSV...";
+            this.toolStripMenuItemSaveCsv.Click += new System.EventHandler(this.OnSaveCsvClick);
             // 
             // toolStripMenuItemHelp
             // 
@@ -208,6 +217,7 @@ namespace GitHubManager {
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemRepositories;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemHelp;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemAbout;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemSaveCsv;
     }
 }
 
