@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GitHubManager {
@@ -21,7 +22,7 @@ namespace GitHubManager {
             .GetEntryAssembly()
             .GetCustomAttribute<AssemblyProductAttribute>()
             // Doesn't handle blanks in the product name
-            .Product.Replace(" ","");
+            .Product.Replace(" ", "");
         private GitHubClient client;
         public User CurrentUser;
         private List<Repo> repoList;
@@ -139,7 +140,23 @@ namespace GitHubManager {
             WriteInfo(builder.ToString());
         }
 
-        private async void OnGetRateRepositoriesClick(object sender, EventArgs e) {
+        private async Task GetReleases(GitHubClient client, Repo repo, Repository repos) {
+            IReadOnlyList<Release> releases =
+                await client.Repository.Release.GetAll(repos.Owner.Login, repos.Name);
+            repo.ReleaseCount = releases.Count;
+        }
+
+        private async Task GetReadme(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                Readme readme =
+                    await client.Repository.Content.GetReadme(repos.Id);
+                repo.Readme = readme;
+            } catch (Exception) {
+                repo.Readme = null;
+            }
+        }
+
+        private async void OnGetRepositoriesClick(object sender, EventArgs e) {
             if (client == null) {
                 WriteInfo(NL + "Get Repositories: No client defined");
                 return;
@@ -156,8 +173,10 @@ namespace GitHubManager {
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
             repoList = new List<Repo>();
             Repo repo;
+            List<Task> taskList = new List<Task>();
             foreach (Repository repos in repositories) {
                 repo = new Repo();
+                repoList.Add(repo);
                 repo.Name = repos.Name;
                 repo.FullName = repos.FullName;
                 repo.Description = repos.Description;
@@ -168,8 +187,12 @@ namespace GitHubManager {
                 repo.CreatedAt = repos.CreatedAt;
                 repo.UpdatedAt = repos.UpdatedAt;
                 repo.PushedAt = repos.PushedAt;
-                repoList.Add(repo);
+                repo.OpenIssuesCount = repos.OpenIssuesCount;
+                repo.ForksCount = repos.ForksCount;
+                taskList.Add(GetReleases(client, repo, repos));
+                taskList.Add(GetReadme(client, repo, repos));
             }
+            await Task.WhenAll(taskList);
             StringBuilder builder = new StringBuilder(NL + "Repositories"
                 + $" ({repositories.Count})" + NL);
             int n = 0;
@@ -192,6 +215,10 @@ namespace GitHubManager {
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? PushedAt { get; set; }
+        public int OpenIssuesCount { get; set; }
+        public int ForksCount { get; set; }
+        public int ReleaseCount { get; set; }
+        public Readme Readme { get; set; }
 
         public override string ToString() {
             StringBuilder builder = new StringBuilder();
@@ -206,6 +233,14 @@ namespace GitHubManager {
             } else {
                 builder.AppendLine($"    License=<NA>");
             }
+            if (Readme != null) {
+                builder.AppendLine($"    Readme={Readme.Name}");
+            } else {
+                builder.AppendLine($"    Readme=<None>");
+            }
+            builder.AppendLine($"    ReleaseCount={ReleaseCount}");
+            builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
+            builder.AppendLine($"    ForksCount={ForksCount}");
             builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
             builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
             if (PushedAt.HasValue) {

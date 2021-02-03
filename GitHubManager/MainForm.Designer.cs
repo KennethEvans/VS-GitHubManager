@@ -135,7 +135,7 @@ namespace GitHubManager {
             this.toolStripMenuItemRepositories.Name = "toolStripMenuItemRepositories";
             this.toolStripMenuItemRepositories.Size = new System.Drawing.Size(402, 54);
             this.toolStripMenuItemRepositories.Text = "Get Repositories";
-            this.toolStripMenuItemRepositories.Click += new System.EventHandler(this.OnGetRateRepositoriesClick);
+            this.toolStripMenuItemRepositories.Click += new System.EventHandler(this.OnGetRepositoriesClick);
             // 
             // toolStripMenuItemRateLimits
             // 
