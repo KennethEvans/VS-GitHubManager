@@ -10,6 +10,8 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Authors>GitHub Manager</Authors>
     <Product>GitHub Manager</Product>
+    <PackageIcon>GitHubManager.ico</PackageIcon>
+    <ApplicationIcon>GitHubManager.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,9 +33,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="GitHubManager.256x256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="GitHubManager.ico">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
     </None>
     <None Include="LICENSE">
       <Pack>True</Pack>

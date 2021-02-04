@@ -111,11 +111,11 @@ namespace GitHubManager {
         private void OnAboutClick(object sender, EventArgs e) {
             Assembly assembly = Assembly.GetExecutingAssembly();
             Image image = null;
-            //try {
-            //    image = Image.FromFile(@".\Help\GPXViewer256.png");
-            //} catch (Exception ex) {
-            //    Utils.excMsg("Failed to get AboutBox image", ex);
-            //}
+            try {
+                image = Image.FromFile(@".\GitHubManager.256x256.png");
+            } catch (Exception ex) {
+                Utils.excMsg("Failed to get AboutBox image", ex);
+            }
             AboutBox dlg = new AboutBox(image, assembly);
             dlg.ShowDialog();
         }
@@ -173,6 +173,7 @@ namespace GitHubManager {
         }
 
         private async Task GetReleases(GitHubClient client, Repo repo, Repository repos) {
+            // Note, using Owner.Login, not Owner.Name
             IReadOnlyList<Release> releases =
                 await client.Repository.Release.GetAll(repos.Owner.Login, repos.Name);
             repo.ReleaseCount = releases.Count;
@@ -348,7 +349,6 @@ namespace GitHubManager {
             line = line.Substring(0, line.Length - CSV_SEP.Length);
             return line;
         }
-
     }
 }
 

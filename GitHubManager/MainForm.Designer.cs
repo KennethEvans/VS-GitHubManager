@@ -24,6 +24,7 @@ namespace GitHubManager {
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.tableLayoutPanelTop = new System.Windows.Forms.TableLayoutPanel();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonClear = new System.Windows.Forms.Button();
@@ -33,9 +34,9 @@ namespace GitHubManager {
             this.toolStripMenuItemFile = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRepositories = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRateLimits = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemSaveCsv = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItemSaveCsv = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
@@ -146,6 +147,13 @@ namespace GitHubManager {
             this.toolStripMenuItemRateLimits.Text = "Get Rate Limits";
             this.toolStripMenuItemRateLimits.Click += new System.EventHandler(this.OnGetRateLimitsClick);
             // 
+            // toolStripMenuItemSaveCsv
+            // 
+            this.toolStripMenuItemSaveCsv.Name = "toolStripMenuItemSaveCsv";
+            this.toolStripMenuItemSaveCsv.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemSaveCsv.Text = "Save CSV...";
+            this.toolStripMenuItemSaveCsv.Click += new System.EventHandler(this.OnSaveCsvClick);
+            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
@@ -157,13 +165,6 @@ namespace GitHubManager {
             this.toolStripMenuItemExit.Size = new System.Drawing.Size(402, 54);
             this.toolStripMenuItemExit.Text = "Exit";
             this.toolStripMenuItemExit.Click += new System.EventHandler(this.OnExitClick);
-            // 
-            // toolStripMenuItemSaveCsv
-            // 
-            this.toolStripMenuItemSaveCsv.Name = "toolStripMenuItemSaveCsv";
-            this.toolStripMenuItemSaveCsv.Size = new System.Drawing.Size(402, 54);
-            this.toolStripMenuItemSaveCsv.Text = "Save CSV...";
-            this.toolStripMenuItemSaveCsv.Click += new System.EventHandler(this.OnSaveCsvClick);
             // 
             // toolStripMenuItemHelp
             // 
@@ -186,6 +187,7 @@ namespace GitHubManager {
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1576, 952);
             this.Controls.Add(this.tableLayoutPanelTop);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "GitHub Manager";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnFormClosing);
