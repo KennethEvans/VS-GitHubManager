@@ -189,6 +189,17 @@ namespace GitHubManager {
             }
         }
 
+        private async Task GetActivity(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                IReadOnlyList<User> stargazers = await client.Activity.Starring.GetAllStargazers(repos.Owner.Login, repos.Name);
+                if (stargazers != null) repo.StarCount = stargazers.Count;
+                IReadOnlyList<User> watchers = await client.Activity.Watching.GetAllWatchers(repos.Owner.Login, repos.Name);
+                if (watchers != null) repo.Watchers = watchers.Count;
+            } catch (Exception) {
+                repo.Readme = null;
+            }
+        }
+
         private async void OnGetRepositoriesClick(object sender, EventArgs e) {
             if (client == null) {
                 WriteInfo(NL + "Get Repositories: No client defined");
@@ -212,6 +223,7 @@ namespace GitHubManager {
                 repoList.Add(repo);
                 taskList.Add(GetReleases(client, repo, repos));
                 taskList.Add(GetReadme(client, repo, repos));
+                taskList.Add(GetActivity(client, repo, repos));
             }
             await Task.WhenAll(taskList);
             StringBuilder builder = new StringBuilder(NL + "Repositories"
@@ -239,6 +251,8 @@ namespace GitHubManager {
              "ReleaseCount",
              "OpenIssuesCount",
              "ForksCount",
+             "StarCount",
+             "Watchers",
              "CreatedAt",
              "UpdatedAt",
              "PushedAt",
@@ -258,6 +272,8 @@ namespace GitHubManager {
         public int ForksCount { get; set; }
         public int ReleaseCount { get; set; }
         public Readme Readme { get; set; }
+        public int StarCount { get; set; } = -1;
+        public int Watchers { get; set; } = -1;
 
         public Repo(Repository repos) {
             Name = repos.Name;
@@ -295,6 +311,8 @@ namespace GitHubManager {
             builder.AppendLine($"    ReleaseCount={ReleaseCount}");
             builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
             builder.AppendLine($"    ForksCount={ForksCount}");
+            builder.AppendLine($"    StarCount={StarCount}");
+            builder.AppendLine($"    Watchers={Watchers}");
             builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
             builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
             if (PushedAt.HasValue) {
@@ -337,6 +355,8 @@ namespace GitHubManager {
             builder.Append($"{ReleaseCount}").Append(CSV_SEP);
             builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
             builder.Append($"{ForksCount}").Append(CSV_SEP);
+            builder.Append($"{StarCount}").Append(CSV_SEP);
+            builder.Append($"{Watchers}").Append(CSV_SEP);
             builder.Append($"{CreatedAt.ToLocalTime()}").Append(CSV_SEP);
             builder.Append($"{UpdatedAt.ToLocalTime()}").Append(CSV_SEP);
             if (PushedAt.HasValue) {
