@@ -26,9 +26,9 @@ namespace GitHubManager {
 #pragma warning disable IDE1006 // Naming Styles
         #region Events
         private void LoginForm_Load(object sender, EventArgs e) {
-            authComboBox.SelectedIndex = (int)AuthenticationType.Basic;
-            string defaultName = Properties.Settings.Default.UserName;
+            authComboBox.SelectedIndex = (int)AuthenticationType.Token;
             userTextBox.Text = Properties.Settings.Default.UserName;
+            passwordTextBox.Text = String.Empty;
         }
 
         private void okButton_Click(object sender, EventArgs e) =>
@@ -55,7 +55,7 @@ namespace GitHubManager {
                     break;
 
                 case AuthenticationType.Token:
-                    Credentials = new Credentials(userTextBox.Text.Trim());
+                    Credentials = new Credentials(passwordTextBox.Text.Trim());
                     DialogResult = DialogResult.OK;
                     break;
 
@@ -79,7 +79,7 @@ namespace GitHubManager {
                     break;
 
                 case AuthenticationType.Token:
-                    okButton.Enabled = HasUsername();
+                    okButton.Enabled = HasPassword();
                     break;
 
                 case AuthenticationType.Unauthenticated:
@@ -108,14 +108,15 @@ namespace GitHubManager {
             switch (type) {
                 case AuthenticationType.Basic:
                     userLabel.Text = "Username:";
+                    passwordLabel.Text = "Password:";
                     userLabel.Visible = userTextBox.Visible = true;
                     passwordLabel.Visible = passwordTextBox.Visible = true;
                     break;
 
                 case AuthenticationType.Token:
-                    userLabel.Text = "Token:";
-                    userLabel.Visible = userTextBox.Visible = true;
-                    passwordLabel.Visible = passwordTextBox.Visible = false;
+                    passwordLabel.Text = "Token:";
+                    passwordLabel.Visible = passwordTextBox.Visible = true;
+                    userLabel.Visible = userTextBox.Visible = false;
                     break;
 
 
@@ -127,7 +128,7 @@ namespace GitHubManager {
                     break;
             }
 
-            userTextBox.Text = passwordTextBox.Text = string.Empty;
+            //userTextBox.Text = passwordTextBox.Text = string.Empty;
             EnableOK();
         }
         #endregion // Private methods

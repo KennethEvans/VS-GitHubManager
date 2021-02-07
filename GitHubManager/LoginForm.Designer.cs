@@ -60,14 +60,14 @@
             this.authComboBox.Location = new System.Drawing.Point(215, 23);
             this.authComboBox.Margin = new System.Windows.Forms.Padding(8, 9, 8, 9);
             this.authComboBox.Name = "authComboBox";
-            this.authComboBox.Size = new System.Drawing.Size(676, 49);
+            this.authComboBox.Size = new System.Drawing.Size(672, 49);
             this.authComboBox.TabIndex = 1;
             this.authComboBox.SelectedIndexChanged += new System.EventHandler(this.authComboBox_SelectedIndexChanged);
             // 
             // passwordLabel
             // 
             this.passwordLabel.AutoSize = true;
-            this.passwordLabel.Location = new System.Drawing.Point(40, 172);
+            this.passwordLabel.Location = new System.Drawing.Point(34, 93);
             this.passwordLabel.Margin = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.passwordLabel.Name = "passwordLabel";
             this.passwordLabel.Size = new System.Drawing.Size(150, 41);
@@ -77,12 +77,13 @@
             // 
             // passwordTextBox
             // 
-            this.passwordTextBox.Location = new System.Drawing.Point(215, 163);
+            this.passwordTextBox.Location = new System.Drawing.Point(215, 93);
             this.passwordTextBox.Margin = new System.Windows.Forms.Padding(8, 9, 8, 9);
             this.passwordTextBox.Name = "passwordTextBox";
             this.passwordTextBox.PasswordChar = '*';
-            this.passwordTextBox.Size = new System.Drawing.Size(676, 47);
+            this.passwordTextBox.Size = new System.Drawing.Size(672, 47);
             this.passwordTextBox.TabIndex = 5;
+            this.passwordTextBox.UseSystemPasswordChar = true;
             this.passwordTextBox.Visible = false;
             this.passwordTextBox.TextChanged += new System.EventHandler(this.passwordTextBox_TextChanged);
             // 
@@ -91,7 +92,7 @@
             this.flowLayoutPanelButtons.AutoSize = true;
             this.flowLayoutPanelButtons.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.flowLayoutPanelButtons.Controls.Add(this.okButton);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(435, 225);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(435, 215);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(74, 57);
             this.flowLayoutPanelButtons.TabIndex = 7;
@@ -110,10 +111,10 @@
             // 
             // userTextBox
             // 
-            this.userTextBox.Location = new System.Drawing.Point(215, 93);
+            this.userTextBox.Location = new System.Drawing.Point(215, 149);
             this.userTextBox.Margin = new System.Windows.Forms.Padding(8, 9, 8, 9);
             this.userTextBox.Name = "userTextBox";
-            this.userTextBox.Size = new System.Drawing.Size(676, 47);
+            this.userTextBox.Size = new System.Drawing.Size(672, 47);
             this.userTextBox.TabIndex = 3;
             this.userTextBox.Visible = false;
             this.userTextBox.TextChanged += new System.EventHandler(this.userTextBox_TextChanged);
@@ -121,7 +122,7 @@
             // userLabel
             // 
             this.userLabel.AutoSize = true;
-            this.userLabel.Location = new System.Drawing.Point(34, 102);
+            this.userLabel.Location = new System.Drawing.Point(34, 149);
             this.userLabel.Margin = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.userLabel.Name = "userLabel";
             this.userLabel.Size = new System.Drawing.Size(159, 41);
@@ -133,7 +134,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(17F, 41F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(938, 298);
+            this.ClientSize = new System.Drawing.Size(944, 286);
             this.Controls.Add(this.flowLayoutPanelButtons);
             this.Controls.Add(this.passwordTextBox);
             this.Controls.Add(this.passwordLabel);

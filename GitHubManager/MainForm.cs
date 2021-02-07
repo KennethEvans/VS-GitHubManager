@@ -98,8 +98,10 @@ namespace GitHubManager {
                 WriteInfo(info);
             } catch (Exception ex) {
                 client = null;
-                Utils.excMsg("Authentication Error", ex);
-                WriteLineInfo("Authentication Error");
+                Utils.excMsg("Authentication Error ", ex);
+                WriteLineInfo("Authentication Error"
+                     + " (Be sure the token or password is what you intended)"
+                     + NL + ex.Message + NL);
             }
         }
 
