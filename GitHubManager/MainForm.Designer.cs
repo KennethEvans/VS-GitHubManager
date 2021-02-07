@@ -39,6 +39,7 @@ namespace GitHubManager {
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemAbout = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemGetUserRepositories = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip.SuspendLayout();
@@ -125,6 +126,7 @@ namespace GitHubManager {
             // 
             this.toolStripMenuItemFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemRepositories,
+            this.toolStripMenuItemGetUserRepositories,
             this.toolStripMenuItemRateLimits,
             this.toolStripMenuItemSaveCsv,
             this.toolStripSeparator1,
@@ -136,33 +138,33 @@ namespace GitHubManager {
             // toolStripMenuItemRepositories
             // 
             this.toolStripMenuItemRepositories.Name = "toolStripMenuItemRepositories";
-            this.toolStripMenuItemRepositories.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemRepositories.Size = new System.Drawing.Size(536, 54);
             this.toolStripMenuItemRepositories.Text = "Get Repositories";
             this.toolStripMenuItemRepositories.Click += new System.EventHandler(this.OnGetRepositoriesClick);
             // 
             // toolStripMenuItemRateLimits
             // 
             this.toolStripMenuItemRateLimits.Name = "toolStripMenuItemRateLimits";
-            this.toolStripMenuItemRateLimits.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemRateLimits.Size = new System.Drawing.Size(536, 54);
             this.toolStripMenuItemRateLimits.Text = "Get Rate Limits";
             this.toolStripMenuItemRateLimits.Click += new System.EventHandler(this.OnGetRateLimitsClick);
             // 
             // toolStripMenuItemSaveCsv
             // 
             this.toolStripMenuItemSaveCsv.Name = "toolStripMenuItemSaveCsv";
-            this.toolStripMenuItemSaveCsv.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemSaveCsv.Size = new System.Drawing.Size(536, 54);
             this.toolStripMenuItemSaveCsv.Text = "Save CSV...";
             this.toolStripMenuItemSaveCsv.Click += new System.EventHandler(this.OnSaveCsvClick);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(399, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(533, 6);
             // 
             // toolStripMenuItemExit
             // 
             this.toolStripMenuItemExit.Name = "toolStripMenuItemExit";
-            this.toolStripMenuItemExit.Size = new System.Drawing.Size(402, 54);
+            this.toolStripMenuItemExit.Size = new System.Drawing.Size(536, 54);
             this.toolStripMenuItemExit.Text = "Exit";
             this.toolStripMenuItemExit.Click += new System.EventHandler(this.OnExitClick);
             // 
@@ -180,6 +182,13 @@ namespace GitHubManager {
             this.toolStripMenuItemAbout.Size = new System.Drawing.Size(287, 54);
             this.toolStripMenuItemAbout.Text = "About...";
             this.toolStripMenuItemAbout.Click += new System.EventHandler(this.OnAboutClick);
+            // 
+            // toolStripMenuItemGetUserRepositories
+            // 
+            this.toolStripMenuItemGetUserRepositories.Name = "toolStripMenuItemGetUserRepositories";
+            this.toolStripMenuItemGetUserRepositories.Size = new System.Drawing.Size(536, 54);
+            this.toolStripMenuItemGetUserRepositories.Text = "Get Repositories for User...";
+            this.toolStripMenuItemGetUserRepositories.Click += new System.EventHandler(this.OnGetUserRepositoriesClick);
             // 
             // MainForm
             // 
@@ -220,6 +229,7 @@ namespace GitHubManager {
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemHelp;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemAbout;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemSaveCsv;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemGetUserRepositories;
     }
 }
 

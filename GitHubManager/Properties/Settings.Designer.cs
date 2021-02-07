@@ -34,5 +34,17 @@ namespace GitHubManager.Properties {
                 this["UserName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RepositoryOwner {
+            get {
+                return ((string)(this["RepositoryOwner"]));
+            }
+            set {
+                this["RepositoryOwner"] = value;
+            }
+        }
     }
 }

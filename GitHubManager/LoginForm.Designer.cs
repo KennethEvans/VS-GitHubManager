@@ -30,12 +30,12 @@
 		{
             this.authLabel = new System.Windows.Forms.Label();
             this.authComboBox = new System.Windows.Forms.ComboBox();
-            this.userLabel = new System.Windows.Forms.Label();
-            this.userTextBox = new System.Windows.Forms.TextBox();
             this.passwordLabel = new System.Windows.Forms.Label();
             this.passwordTextBox = new System.Windows.Forms.TextBox();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.okButton = new System.Windows.Forms.Button();
+            this.userTextBox = new System.Windows.Forms.TextBox();
+            this.userLabel = new System.Windows.Forms.Label();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -63,27 +63,6 @@
             this.authComboBox.Size = new System.Drawing.Size(676, 49);
             this.authComboBox.TabIndex = 1;
             this.authComboBox.SelectedIndexChanged += new System.EventHandler(this.authComboBox_SelectedIndexChanged);
-            // 
-            // userLabel
-            // 
-            this.userLabel.AutoSize = true;
-            this.userLabel.Location = new System.Drawing.Point(34, 102);
-            this.userLabel.Margin = new System.Windows.Forms.Padding(8, 0, 8, 0);
-            this.userLabel.Name = "userLabel";
-            this.userLabel.Size = new System.Drawing.Size(159, 41);
-            this.userLabel.TabIndex = 2;
-            this.userLabel.Text = "Username:";
-            this.userLabel.Visible = false;
-            // 
-            // userTextBox
-            // 
-            this.userTextBox.Location = new System.Drawing.Point(215, 93);
-            this.userTextBox.Margin = new System.Windows.Forms.Padding(8, 9, 8, 9);
-            this.userTextBox.Name = "userTextBox";
-            this.userTextBox.Size = new System.Drawing.Size(676, 47);
-            this.userTextBox.TabIndex = 3;
-            this.userTextBox.Visible = false;
-            this.userTextBox.TextChanged += new System.EventHandler(this.userTextBox_TextChanged);
             // 
             // passwordLabel
             // 
@@ -129,6 +108,27 @@
             this.okButton.UseVisualStyleBackColor = true;
             this.okButton.Click += new System.EventHandler(this.okButton_Click);
             // 
+            // userTextBox
+            // 
+            this.userTextBox.Location = new System.Drawing.Point(215, 93);
+            this.userTextBox.Margin = new System.Windows.Forms.Padding(8, 9, 8, 9);
+            this.userTextBox.Name = "userTextBox";
+            this.userTextBox.Size = new System.Drawing.Size(676, 47);
+            this.userTextBox.TabIndex = 3;
+            this.userTextBox.Visible = false;
+            this.userTextBox.TextChanged += new System.EventHandler(this.userTextBox_TextChanged);
+            // 
+            // userLabel
+            // 
+            this.userLabel.AutoSize = true;
+            this.userLabel.Location = new System.Drawing.Point(34, 102);
+            this.userLabel.Margin = new System.Windows.Forms.Padding(8, 0, 8, 0);
+            this.userLabel.Name = "userLabel";
+            this.userLabel.Size = new System.Drawing.Size(159, 41);
+            this.userLabel.TabIndex = 2;
+            this.userLabel.Text = "Username:";
+            this.userLabel.Visible = false;
+            // 
             // LoginForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(17F, 41F);
@@ -163,11 +163,11 @@
 
 		private System.Windows.Forms.Label authLabel;
 		private System.Windows.Forms.ComboBox authComboBox;
-		private System.Windows.Forms.Label userLabel;
-		private System.Windows.Forms.TextBox userTextBox;
 		private System.Windows.Forms.Label passwordLabel;
 		private System.Windows.Forms.TextBox passwordTextBox;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelButtons;
         private System.Windows.Forms.Button okButton;
+        private System.Windows.Forms.TextBox userTextBox;
+        private System.Windows.Forms.Label userLabel;
     }
 }

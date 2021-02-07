@@ -1,4 +1,5 @@
 ﻿using KEUtils.About;
+using KEUtils.InputDialog;
 using KEUtils.Utils;
 using Octokit;
 using System;
@@ -33,10 +34,18 @@ namespace GitHubManager {
         }
 
         /// <summary>
+        /// Appends the input to the textBoxInfo.
+        /// </summary>
+        /// <param name="line"></param>
+        public void WriteInfo(string line = "") {
+            textBox.AppendText(line);
+        }
+
+        /// <summary>
         /// Appends the input plus a NL to the textBoxInfo.
         /// </summary>
         /// <param name="line"></param>
-        public void WriteInfo(string line) {
+        public void WriteLineInfo(string line = "") {
             textBox.AppendText(line + NL);
         }
 
@@ -58,28 +67,122 @@ namespace GitHubManager {
                 client = new GitHubClient(new ProductHeaderValue(GitHubIdentity));
                 if (credentials == null) {
                     CurrentUser = null;
-                    WriteInfo("Authentication=None");
+                    WriteLineInfo("Authentication=None");
                     return;
                 }
 
                 client.Credentials = credentials;
-                CurrentUser = client.User
-                    .Current()
-                    .GetAwaiter()
-                    .GetResult();
+                CurrentUser = client.User.Current().GetAwaiter().GetResult();
                 Properties.Settings.Default.UserName = CurrentUser.Name;
                 Properties.Settings.Default.Save();
                 string info = "Authentication="
-                    + credentials.AuthenticationType.ToString()
-                    + " UserName=" + CurrentUser.Name;
+                    + credentials.AuthenticationType.ToString() + NL;
+                info += "Login=" + CurrentUser.Login + NL;
+                info += "Name=" + CurrentUser.Name + NL;
+                info += "Id=" + CurrentUser.Id + NL;
+                info += "CreatedAt=" + CurrentUser.CreatedAt.ToLocalTime() + NL;
+                info += "UpdatedAt=" + CurrentUser.UpdatedAt.ToLocalTime() + NL;
+                info += "Email=" + CurrentUser.Email + NL;
+                info += "Company=" + CurrentUser.Company + NL;
+                info += "Blog=" + CurrentUser.Blog + NL;
+                info += "HtmlUrl=" + CurrentUser.HtmlUrl + NL;
+                info += "Url=" + CurrentUser.Url + NL;
+                info += "AvatarUrl=" + CurrentUser.AvatarUrl + NL;
+                info += "DiskUsage=" + CurrentUser.DiskUsage + NL;
+                info += "Followers=" + CurrentUser.Followers + NL;
+                info += "Following=" + CurrentUser.Following + NL;
+                info += "Collaborators=" + CurrentUser.Collaborators + NL;
+                info += "PublicRepos=" + CurrentUser.PublicRepos + NL;
+                info += "OwnedPrivateRepos=" + CurrentUser.OwnedPrivateRepos + NL;
+                info += "TotalPrivateRepos=" + CurrentUser.TotalPrivateRepos + NL;
                 WriteInfo(info);
             } catch (Exception ex) {
                 client = null;
                 Utils.excMsg("Authentication Error", ex);
-                WriteInfo("Authentication Error");
+                WriteLineInfo("Authentication Error");
             }
         }
 
+        private void SaveCsv(string fileName) {
+            try {
+                using (StreamWriter sw = new StreamWriter(fileName)) {
+                    sw.WriteLine(Repo.CsvHeader());
+                    foreach (Repo repo in repoList) {
+                        sw.WriteLine(repo.CsvRow());
+                    }
+                }
+                WriteLineInfo(NL + "SaveCsv: Wrote " + fileName);
+            } catch (Exception ex) {
+                string msg = "SaveCsv: Error writing CSV file " + fileName;
+                WriteLineInfo(NL + msg);
+                Utils.excMsg(msg, ex);
+                return;
+            }
+        }
+
+        #region Async Tasks
+        private async Task GetReleases(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                // Note, using Owner.Login, not Owner.Name
+                IReadOnlyList<Release> releases =
+                    await client.Repository.Release.GetAll(repos.Owner.Login, repos.Name);
+                repo.ReleaseCount = releases.Count;
+            } catch (Exception) {
+                repo.ReleaseCount = -1;
+            }
+        }
+
+        private async Task GetReadme(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                Readme readme =
+                    await client.Repository.Content.GetReadme(repos.Id);
+                repo.Readme = readme;
+            } catch (Exception) {
+                repo.Readme = null;
+            }
+        }
+
+        private async Task GetActivity(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                IReadOnlyList<User> stargazers = await client.Activity.Starring.GetAllStargazers(repos.Owner.Login, repos.Name);
+                if (stargazers != null) repo.StarCount = stargazers.Count;
+                IReadOnlyList<User> watchers = await client.Activity.Watching.GetAllWatchers(repos.Owner.Login, repos.Name);
+                if (watchers != null) repo.Watchers = watchers.Count;
+            } catch (Exception) {
+                repo.Readme = null;
+            }
+        }
+
+        private async Task GetRepositories(IReadOnlyList<Repository> repositories) {
+            try {
+                repoList = new List<Repo>();
+                Repo repo;
+                List<Task> taskList = new List<Task>();
+                foreach (Repository repos in repositories) {
+                    repo = new Repo(repos);
+                    repoList.Add(repo);
+                    taskList.Add(GetReleases(client, repo, repos));
+                    taskList.Add(GetReadme(client, repo, repos));
+                    taskList.Add(GetActivity(client, repo, repos));
+                }
+                await Task.WhenAll(taskList);
+                StringBuilder builder = new StringBuilder("Repositories"
+                    + $" ({repositories.Count})" + NL);
+                int n = 0;
+                foreach (Repo repo1 in repoList) {
+                    builder.Append($"{++n} ");
+                    builder.Append(repo1.ToString());
+                }
+                WriteInfo(builder.ToString());
+            } catch (Exception ex) {
+                string msg = "Failed to get repository information";
+                Utils.excMsg(msg, ex);
+                WriteInfo(msg + NL + ex.Message);
+            }
+        }
+        #endregion
+
+        #region Event Handlers
         private void OnFormLoad(object sender, EventArgs e) {
             BeginInvoke((MethodInvoker)ShowLoginForm);
         }
@@ -122,7 +225,7 @@ namespace GitHubManager {
 
         private void OnSaveCsvClick(object sender, EventArgs e) {
             if (repoList == null || repoList.Count == 0) {
-                WriteInfo(NL + "Save CSV: No repositories to save");
+                WriteLineInfo(NL + "Save CSV: No repositories to save");
                 return;
             }
             SaveFileDialog dlg = new SaveFileDialog();
@@ -134,26 +237,9 @@ namespace GitHubManager {
             }
         }
 
-        private void SaveCsv(string fileName) {
-            try {
-                using (StreamWriter sw = new StreamWriter(fileName)) {
-                    sw.WriteLine(Repo.CsvHeader());
-                    foreach (Repo repo in repoList) {
-                        sw.WriteLine(repo.CsvRow());
-                    }
-                }
-                WriteInfo(NL + "SaveCsv: Wrote " + fileName);
-            } catch (Exception ex) {
-                string msg = "SaveCsv: Error writing CSV file " + fileName;
-                WriteInfo(NL + msg);
-                Utils.excMsg(msg, ex);
-                return;
-            }
-        }
-
         private async void OnGetRateLimitsClick(object sender, EventArgs e) {
             if (client == null) {
-                WriteInfo(NL + "Get Rate Limits: No client defined");
+                WriteLineInfo(NL + "Get Rate Limits: No client defined");
                 return;
             }
             MiscellaneousRateLimit miscellaneousRateLimit = await client.Miscellaneous.GetRateLimits();
@@ -172,69 +258,80 @@ namespace GitHubManager {
             WriteInfo(builder.ToString());
         }
 
-        private async Task GetReleases(GitHubClient client, Repo repo, Repository repos) {
-            // Note, using Owner.Login, not Owner.Name
-            IReadOnlyList<Release> releases =
-                await client.Repository.Release.GetAll(repos.Owner.Login, repos.Name);
-            repo.ReleaseCount = releases.Count;
-        }
-
-        private async Task GetReadme(GitHubClient client, Repo repo, Repository repos) {
-            try {
-                Readme readme =
-                    await client.Repository.Content.GetReadme(repos.Id);
-                repo.Readme = readme;
-            } catch (Exception) {
-                repo.Readme = null;
-            }
-        }
-
-        private async Task GetActivity(GitHubClient client, Repo repo, Repository repos) {
-            try {
-                IReadOnlyList<User> stargazers = await client.Activity.Starring.GetAllStargazers(repos.Owner.Login, repos.Name);
-                if (stargazers != null) repo.StarCount = stargazers.Count;
-                IReadOnlyList<User> watchers = await client.Activity.Watching.GetAllWatchers(repos.Owner.Login, repos.Name);
-                if (watchers != null) repo.Watchers = watchers.Count;
-            } catch (Exception) {
-                repo.Readme = null;
-            }
-        }
-
         private async void OnGetRepositoriesClick(object sender, EventArgs e) {
             if (client == null) {
-                WriteInfo(NL + "Get Repositories: No client defined");
+                WriteLineInfo(NL + "Get Repositories: No client defined");
                 return;
             }
             Credentials credentials = client.Credentials;
             if (credentials == null) {
-                WriteInfo(NL + "Get Repositories: Cannot determine credentials");
+                WriteLineInfo(NL + "Get Repositories: Cannot determine credentials");
                 return;
             }
             if (credentials.AuthenticationType == AuthenticationType.Anonymous) {
-                WriteInfo(NL + "Get Repositories: Must be authenticated");
+                WriteLineInfo(NL + "Get Repositories: Must be authenticated");
                 return;
             }
+            WriteLineInfo(NL + "Searching for Repositories for "
+                + CurrentUser.Login);
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
-            repoList = new List<Repo>();
-            Repo repo;
-            List<Task> taskList = new List<Task>();
-            foreach (Repository repos in repositories) {
-                repo = new Repo(repos);
-                repoList.Add(repo);
-                taskList.Add(GetReleases(client, repo, repos));
-                taskList.Add(GetReadme(client, repo, repos));
-                taskList.Add(GetActivity(client, repo, repos));
-            }
-            await Task.WhenAll(taskList);
-            StringBuilder builder = new StringBuilder(NL + "Repositories"
-                + $" ({repositories.Count})" + NL);
-            int n = 0;
-            foreach (Repo repo1 in repoList) {
-                builder.Append($"{++n} ");
-                builder.Append(repo1.ToString());
-            }
-            WriteInfo(builder.ToString());
+            await GetRepositories(repositories);
         }
+
+        private async void OnGetUserRepositoriesClick(object sender, EventArgs e) {
+            if (client == null) {
+                WriteLineInfo(NL + "Get User Repositories: No client defined");
+                return;
+            }
+            Credentials credentials = client.Credentials;
+            if (credentials == null) {
+                WriteLineInfo(NL + "Get User Repositories: Cannot determine credentials");
+                return;
+            }
+            if (credentials.AuthenticationType == AuthenticationType.Anonymous) {
+                WriteLineInfo(NL + "Get Repositories: Must be authenticated");
+                return;
+            }
+            string userName;
+            string msg = "Enter ";
+            InputDialog dlg = new InputDialog("Repository Name", msg,
+                Properties.Settings.Default.RepositoryOwner);
+            DialogResult res = dlg.ShowDialog();
+            if (res == DialogResult.OK) {
+                userName = dlg.Value;
+                Properties.Settings.Default.RepositoryOwner = userName;
+                Properties.Settings.Default.Save();
+                if (!String.IsNullOrEmpty(userName)) {
+                    WriteLineInfo(NL + "Searching for Repositories for " + userName);
+                } else {
+                    WriteLineInfo(NL + "Searching for repositories: Invalid user name : "
+                        + userName);
+                    return;
+                }
+            } else {
+                return;
+            }
+            SearchUsersResult result = await client.Search.SearchUsers(
+                new SearchUsersRequest(userName) {
+                    AccountType = AccountSearchType.User
+                });
+            IReadOnlyList<User> users = result.Items;
+            if (users == null || users.Count == 0) {
+                WriteLineInfo("User not found: " + userName);
+                return;
+            }
+            userName = users[0].Login;
+            SearchRepositoryResult reposResult = await client.Search.SearchRepo(new SearchRepositoriesRequest() {
+                User = userName
+            });
+            IReadOnlyList<Repository> repositories = reposResult.Items;
+            if (repositories == null || repositories.Count == 0) {
+                WriteLineInfo("No repositories found");
+                return;
+            }
+            await GetRepositories(repositories);
+        }
+        #endregion
     }
 
     public class Repo {
