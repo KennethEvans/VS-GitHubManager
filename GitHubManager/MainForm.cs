@@ -285,15 +285,6 @@ namespace GitHubManager {
                 WriteLineInfo(NL + "Get User Repositories: No client defined");
                 return;
             }
-            Credentials credentials = client.Credentials;
-            if (credentials == null) {
-                WriteLineInfo(NL + "Get User Repositories: Cannot determine credentials");
-                return;
-            }
-            if (credentials.AuthenticationType == AuthenticationType.Anonymous) {
-                WriteLineInfo(NL + "Get Repositories: Must be authenticated");
-                return;
-            }
             string userName;
             string msg = "Enter ";
             InputDialog dlg = new InputDialog("Repository Name", msg,
