@@ -33,13 +33,14 @@ namespace GitHubManager {
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.toolStripMenuItemFile = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRepositories = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemGetUserRepositories = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemGetUserInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRateLimits = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemSaveCsv = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemAbout = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItemGetUserRepositories = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip.SuspendLayout();
@@ -127,6 +128,7 @@ namespace GitHubManager {
             this.toolStripMenuItemFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemRepositories,
             this.toolStripMenuItemGetUserRepositories,
+            this.toolStripMenuItemGetUserInfo,
             this.toolStripMenuItemRateLimits,
             this.toolStripMenuItemSaveCsv,
             this.toolStripSeparator1,
@@ -141,6 +143,20 @@ namespace GitHubManager {
             this.toolStripMenuItemRepositories.Size = new System.Drawing.Size(536, 54);
             this.toolStripMenuItemRepositories.Text = "Get Repositories";
             this.toolStripMenuItemRepositories.Click += new System.EventHandler(this.OnGetRepositoriesClick);
+            // 
+            // toolStripMenuItemGetUserRepositories
+            // 
+            this.toolStripMenuItemGetUserRepositories.Name = "toolStripMenuItemGetUserRepositories";
+            this.toolStripMenuItemGetUserRepositories.Size = new System.Drawing.Size(536, 54);
+            this.toolStripMenuItemGetUserRepositories.Text = "Get Repositories for User...";
+            this.toolStripMenuItemGetUserRepositories.Click += new System.EventHandler(this.OnGetUserRepositoriesClick);
+            // 
+            // toolStripMenuItemGetUserInfo
+            // 
+            this.toolStripMenuItemGetUserInfo.Name = "toolStripMenuItemGetUserInfo";
+            this.toolStripMenuItemGetUserInfo.Size = new System.Drawing.Size(536, 54);
+            this.toolStripMenuItemGetUserInfo.Text = "Get Info for User...";
+            this.toolStripMenuItemGetUserInfo.Click += new System.EventHandler(this.OnGetUserInformationClick);
             // 
             // toolStripMenuItemRateLimits
             // 
@@ -183,13 +199,6 @@ namespace GitHubManager {
             this.toolStripMenuItemAbout.Text = "About...";
             this.toolStripMenuItemAbout.Click += new System.EventHandler(this.OnAboutClick);
             // 
-            // toolStripMenuItemGetUserRepositories
-            // 
-            this.toolStripMenuItemGetUserRepositories.Name = "toolStripMenuItemGetUserRepositories";
-            this.toolStripMenuItemGetUserRepositories.Size = new System.Drawing.Size(536, 54);
-            this.toolStripMenuItemGetUserRepositories.Text = "Get Repositories for User...";
-            this.toolStripMenuItemGetUserRepositories.Click += new System.EventHandler(this.OnGetUserRepositoriesClick);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(17F, 41F);
@@ -230,6 +239,7 @@ namespace GitHubManager {
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemAbout;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemSaveCsv;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemGetUserRepositories;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemGetUserInfo;
     }
 }
 

@@ -75,27 +75,8 @@ namespace GitHubManager {
                 CurrentUser = client.User.Current().GetAwaiter().GetResult();
                 Properties.Settings.Default.UserName = CurrentUser.Name;
                 Properties.Settings.Default.Save();
-                string info = "Authentication="
-                    + credentials.AuthenticationType.ToString() + NL;
-                info += "Login=" + CurrentUser.Login + NL;
-                info += "Name=" + CurrentUser.Name + NL;
-                info += "Id=" + CurrentUser.Id + NL;
-                info += "CreatedAt=" + CurrentUser.CreatedAt.ToLocalTime() + NL;
-                info += "UpdatedAt=" + CurrentUser.UpdatedAt.ToLocalTime() + NL;
-                info += "Email=" + CurrentUser.Email + NL;
-                info += "Company=" + CurrentUser.Company + NL;
-                info += "Blog=" + CurrentUser.Blog + NL;
-                info += "HtmlUrl=" + CurrentUser.HtmlUrl + NL;
-                info += "Url=" + CurrentUser.Url + NL;
-                info += "AvatarUrl=" + CurrentUser.AvatarUrl + NL;
-                info += "DiskUsage=" + CurrentUser.DiskUsage + NL;
-                info += "Followers=" + CurrentUser.Followers + NL;
-                info += "Following=" + CurrentUser.Following + NL;
-                info += "Collaborators=" + CurrentUser.Collaborators + NL;
-                info += "PublicRepos=" + CurrentUser.PublicRepos + NL;
-                info += "OwnedPrivateRepos=" + CurrentUser.OwnedPrivateRepos + NL;
-                info += "TotalPrivateRepos=" + CurrentUser.TotalPrivateRepos + NL;
-                WriteInfo(info);
+                WriteLineInfo($"Authentication={credentials.AuthenticationType}");
+                WriteInfo(GetUserInformation(CurrentUser));
             } catch (Exception ex) {
                 client = null;
                 Utils.excMsg("Authentication Error ", ex);
@@ -120,6 +101,33 @@ namespace GitHubManager {
                 Utils.excMsg(msg, ex);
                 return;
             }
+        }
+
+        private string GetUserInformation(User user) {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Login={user.Login}");
+            builder.AppendLine($"Name={user.Name}");
+            builder.AppendLine($"Id={user.Id}");
+            builder.AppendLine($"AccountType={user.Type}");
+            builder.AppendLine($"CreatedAt={user.CreatedAt.ToLocalTime()}");
+            builder.AppendLine($"UpdatedAt={user.UpdatedAt.ToLocalTime()}");
+            builder.AppendLine($"Email={user.Email}");
+            builder.AppendLine($"Company={user.Company}");
+            builder.AppendLine($"Blog={user.Blog}");
+            builder.AppendLine($"HtmlUrl={user.HtmlUrl}");
+            builder.AppendLine($"Url={user.Url}");
+            builder.AppendLine($"Location={user.Location}");
+            builder.AppendLine($"AvatarUrl={user.AvatarUrl}");
+            builder.AppendLine($"DiskUsage={user.DiskUsage}");
+            builder.AppendLine($"Followers={user.Followers}");
+            builder.AppendLine($"Following={user.Following}");
+            builder.AppendLine($"Collaborators={user.Collaborators}");
+            builder.AppendLine($"PublicRepos={user.PublicRepos}");
+            builder.AppendLine($"OwnedPrivateRepos={user.OwnedPrivateRepos}");
+            builder.AppendLine($"TotalPrivateRepos={user.TotalPrivateRepos}");
+            builder.AppendLine($"PublicGists={user.PublicGists}");
+            builder.AppendLine($"PrivateGists={user.PrivateGists}");
+            return builder.ToString();
         }
 
         #region Async Tasks
@@ -276,6 +284,8 @@ namespace GitHubManager {
             }
             WriteLineInfo(NL + "Searching for Repositories for "
                 + CurrentUser.Login);
+            ApiOptions options = new ApiOptions();
+            // My understanding is that this will get them all
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
             await GetRepositories(repositories);
         }
@@ -297,32 +307,73 @@ namespace GitHubManager {
                 if (!String.IsNullOrEmpty(userName)) {
                     WriteLineInfo(NL + "Searching for Repositories for " + userName);
                 } else {
-                    WriteLineInfo(NL + "Searching for repositories: Invalid user name : "
+                    WriteLineInfo(NL + "Searching for repositories: Invalid user name: "
                         + userName);
                     return;
                 }
             } else {
                 return;
             }
-            SearchUsersResult result = await client.Search.SearchUsers(
-                new SearchUsersRequest(userName) {
-                    AccountType = AccountSearchType.User
-                });
-            IReadOnlyList<User> users = result.Items;
-            if (users == null || users.Count == 0) {
+            User user = await client.User.Get(userName);
+            if (user == null) {
                 WriteLineInfo("User not found: " + userName);
                 return;
             }
-            userName = users[0].Login;
-            SearchRepositoryResult reposResult = await client.Search.SearchRepo(new SearchRepositoriesRequest() {
-                User = userName
-            });
-            IReadOnlyList<Repository> repositories = reposResult.Items;
-            if (repositories == null || repositories.Count == 0) {
+            List<Repository> repositories = new List<Repository>();
+            int page = 1;
+            // Handle more than 1 page
+            while (true) {
+                SearchRepositoryResult reposResult = await client.Search.SearchRepo(new SearchRepositoriesRequest() {
+                    User = userName,
+                    PerPage = 100,
+                    Page = page++
+                });
+                IReadOnlyList<Repository> repositories1 = reposResult.Items;
+                if(repositories1 == null) {
+                    WriteLineInfo("Error finding repositories");
+                    return;
+                }
+                foreach (Repository repos in repositories1) {
+                    repositories.Add(repos);
+                }
+                //WriteLineInfo($"Items.Count={reposResult.Items.Count} " +
+                //    $"TotalCount={reposResult.TotalCount} " +
+                //    $"IncompleteResults={reposResult.IncompleteResults}");
+                if (repositories1.Count < 100) break;
+            }
+            if (repositories.Count == 0) {
                 WriteLineInfo("No repositories found");
                 return;
             }
             await GetRepositories(repositories);
+        }
+
+        private async void OnGetUserInformationClick(object sender, EventArgs e) {
+            if (client == null) {
+                WriteLineInfo(NL + "Get User Information: No client defined");
+                return;
+            }
+            string userName;
+            string msg = "Enter ";
+            InputDialog dlg = new InputDialog("Repository Name", msg,
+                Properties.Settings.Default.RepositoryOwner);
+            DialogResult res = dlg.ShowDialog();
+            if (res == DialogResult.OK) {
+                userName = dlg.Value;
+                Properties.Settings.Default.RepositoryOwner = userName;
+                Properties.Settings.Default.Save();
+                if (!String.IsNullOrEmpty(userName)) {
+                    WriteLineInfo(NL + "User information for " + userName);
+                } else {
+                    WriteLineInfo(NL + "Get User Information: Invalid user name: "
+                        + userName);
+                    return;
+                }
+            } else {
+                return;
+            }
+            User user = await client.User.Get(userName);
+            WriteInfo(GetUserInformation(user));
         }
         #endregion
     }
