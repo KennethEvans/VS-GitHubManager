@@ -26,8 +26,10 @@ namespace GitHubManager {
             // Doesn't handle blanks in the product name
             .Product.Replace(" ", "");
         private GitHubClient client;
-        public User CurrentUser;
+        private User CurrentUser;
+        private string currentRepositoryOwner;
         private List<Repo> repoList;
+
 
         public MainForm() {
             InitializeComponent();
@@ -89,6 +91,8 @@ namespace GitHubManager {
         private void SaveCsv(string fileName) {
             try {
                 using (StreamWriter sw = new StreamWriter(fileName)) {
+                    sw.WriteLine("Repository Information for " + currentRepositoryOwner);
+                    sw.Write(Repo.GetSummary(repoList));
                     sw.WriteLine(Repo.CsvHeader());
                     foreach (Repo repo in repoList) {
                         sw.WriteLine(repo.CsvRow());
@@ -163,9 +167,10 @@ namespace GitHubManager {
             }
         }
 
-        private async Task GetRepositories(IReadOnlyList<Repository> repositories) {
+        private async Task GetRepositories(string userName, IReadOnlyList<Repository> repositories) {
             try {
                 repoList = new List<Repo>();
+                currentRepositoryOwner = userName;
                 Repo repo;
                 List<Task> taskList = new List<Task>();
                 foreach (Repository repos in repositories) {
@@ -184,6 +189,8 @@ namespace GitHubManager {
                     builder.Append(repo1.ToString());
                 }
                 WriteInfo(builder.ToString());
+                WriteLineInfo("Summary");
+                WriteInfo(Repo.GetSummary(repoList));
             } catch (Exception ex) {
                 string msg = "Failed to get repository information";
                 Utils.excMsg(msg, ex);
@@ -240,7 +247,8 @@ namespace GitHubManager {
             }
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.Title = "Select CSV file";
-            dlg.FileName = "RepositoryInfo-" + DateTime.Now.ToString("yyyy-MM-dd") + ".csv";
+            dlg.FileName = $"RepositoryInfo-{currentRepositoryOwner}" +
+                $"-{DateTime.Now.ToString("yyyy-MM-dd")}.csv";
             dlg.Filter = "CSV|*.csv";
             if (dlg.ShowDialog() == DialogResult.OK) {
                 SaveCsv(dlg.FileName);
@@ -286,7 +294,7 @@ namespace GitHubManager {
                 + CurrentUser.Login);
             // This will get them all (no paging)
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
-            await GetRepositories(repositories);
+            await GetRepositories(CurrentUser.Login, repositories);
         }
 
         private async void OnGetUserRepositoriesClick(object sender, EventArgs e) {
@@ -315,9 +323,15 @@ namespace GitHubManager {
             }
             // This will get them all (no paging)
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForUser(userName);
-            await GetRepositories(repositories);
+            await GetRepositories(userName, repositories);
         }
 
+        /// <summary>
+        /// Gets the repositories using Search. Not used as the information is 
+        /// incomplete.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void OnGetUserRepositoriesClick1(object sender, EventArgs e) {
             if (client == null) {
                 WriteLineInfo(NL + "Get User Repositories: No client defined");
@@ -373,7 +387,7 @@ namespace GitHubManager {
                 WriteLineInfo("No repositories found");
                 return;
             }
-            await GetRepositories(repositories);
+            await GetRepositories(userName, repositories);
         }
 
         private async void OnGetUserInformationClick(object sender, EventArgs e) {
@@ -545,6 +559,32 @@ namespace GitHubManager {
             string line = builder.ToString();
             line = line.Substring(0, line.Length - CSV_SEP.Length);
             return line;
+        }
+
+        public static string GetSummary(List<Repo> repoList, string tab = "    ") {
+            StringBuilder builder = new StringBuilder();
+            int nPrivate = 0, nForked = 0, nMissingReadmes = 0, nMissingLicenses = 0,
+                nMissingDescriptions = 0, nOpenIssues = 0, nStars = 0, nWatchers = 0;
+            foreach (Repo repo in repoList) {
+                if (repo.Private) nPrivate++;
+                if (repo.Fork) nForked++;
+                if (repo.Readme == null || String.IsNullOrEmpty(repo.Readme.Name)) nMissingReadmes++;
+                if (repo.License == null || String.IsNullOrEmpty(repo.License.Name)) nMissingLicenses++;
+                if (String.IsNullOrEmpty(repo.Description)) nMissingDescriptions++;
+                if (repo.OpenIssuesCount > 0) nOpenIssues++;
+                nStars += repo.StarCount;
+                nWatchers += repo.Watchers;
+            }
+            builder.Append(tab).AppendLine($"Repositories={repoList.Count}");
+            builder.Append(tab).AppendLine($"Private={nPrivate}");
+            builder.Append(tab).AppendLine($"Forked={nForked}");
+            builder.Append(tab).AppendLine($"Missing Descriptions={nMissingDescriptions}");
+            builder.Append(tab).AppendLine($"Missing Readme's={nMissingReadmes}");
+            builder.Append(tab).AppendLine($"Missing Licenses={nMissingLicenses}");
+            builder.Append(tab).AppendLine($"Open Issues={nOpenIssues}");
+            builder.Append(tab).AppendLine($"Stars={nStars}");
+            builder.Append(tab).AppendLine($"Watchers={nWatchers}");
+            return builder.ToString();
         }
     }
 }
