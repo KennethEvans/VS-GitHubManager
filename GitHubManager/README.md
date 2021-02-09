@@ -23,7 +23,7 @@ To uninstall, just delete these files.
 
 **Development**
 
-GitHub Manager uses the NuGet package Octokit as well as the class libraries Utils.dll from https://github.com/KennethEvans/VS-Utils and GpsUtils from https://github.com/KennethEvans/VS-GpsUtils.
+GitHub Manager uses the NuGet package Octokit as well as the class library Utils.dll from https://github.com/KennethEvans/VS-Utils.
 
 It is hosted at https://github.com/KennethEvans/VS-GitHubManager.
 
