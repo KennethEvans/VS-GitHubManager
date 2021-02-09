@@ -284,13 +284,41 @@ namespace GitHubManager {
             }
             WriteLineInfo(NL + "Searching for Repositories for "
                 + CurrentUser.Login);
-            ApiOptions options = new ApiOptions();
-            // My understanding is that this will get them all
+            // This will get them all (no paging)
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
             await GetRepositories(repositories);
         }
 
         private async void OnGetUserRepositoriesClick(object sender, EventArgs e) {
+            if (client == null) {
+                WriteLineInfo(NL + "Get User Repositories: No client defined");
+                return;
+            }
+            string userName;
+            string msg = "Enter ";
+            InputDialog dlg = new InputDialog("Repository Name", msg,
+                Properties.Settings.Default.RepositoryOwner);
+            DialogResult res = dlg.ShowDialog();
+            if (res == DialogResult.OK) {
+                userName = dlg.Value;
+                Properties.Settings.Default.RepositoryOwner = userName;
+                Properties.Settings.Default.Save();
+                if (!String.IsNullOrEmpty(userName)) {
+                    WriteLineInfo(NL + "Searching for Repositories for " + userName);
+                } else {
+                    WriteLineInfo(NL + "Searching for repositories: Invalid user name: "
+                        + userName);
+                    return;
+                }
+            } else {
+                return;
+            }
+            // This will get them all (no paging)
+            IReadOnlyList<Repository> repositories = await client.Repository.GetAllForUser(userName);
+            await GetRepositories(repositories);
+        }
+
+        private async void OnGetUserRepositoriesClick1(object sender, EventArgs e) {
             if (client == null) {
                 WriteLineInfo(NL + "Get User Repositories: No client defined");
                 return;
@@ -329,7 +357,7 @@ namespace GitHubManager {
                     Page = page++
                 });
                 IReadOnlyList<Repository> repositories1 = reposResult.Items;
-                if(repositories1 == null) {
+                if (repositories1 == null) {
                     WriteLineInfo("Error finding repositories");
                     return;
                 }
@@ -391,6 +419,7 @@ namespace GitHubManager {
              "Readme",
              "ReleaseCount",
              "OpenIssuesCount",
+             "Fork",
              "ForksCount",
              "StarCount",
              "Watchers",
@@ -410,11 +439,13 @@ namespace GitHubManager {
         public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? PushedAt { get; set; }
         public int OpenIssuesCount { get; set; }
+        public bool Fork { get; set; }
         public int ForksCount { get; set; }
         public int ReleaseCount { get; set; }
         public Readme Readme { get; set; }
         public int StarCount { get; set; } = -1;
         public int Watchers { get; set; } = -1;
+        public string HomePage { get; set; }
 
         public Repo(Repository repos) {
             Name = repos.Name;
@@ -428,7 +459,9 @@ namespace GitHubManager {
             UpdatedAt = repos.UpdatedAt;
             PushedAt = repos.PushedAt;
             OpenIssuesCount = repos.OpenIssuesCount;
+            Fork = repos.Fork;
             ForksCount = repos.ForksCount;
+            //HomePage = repos.Homepage;
         }
 
         public override string ToString() {
@@ -451,9 +484,11 @@ namespace GitHubManager {
             }
             builder.AppendLine($"    ReleaseCount={ReleaseCount}");
             builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
+            builder.AppendLine($"    Fork={Fork}");
             builder.AppendLine($"    ForksCount={ForksCount}");
             builder.AppendLine($"    StarCount={StarCount}");
             builder.AppendLine($"    Watchers={Watchers}");
+            //builder.AppendLine($"    HomePage={HomePage}");
             builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
             builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
             if (PushedAt.HasValue) {
@@ -495,6 +530,7 @@ namespace GitHubManager {
             }
             builder.Append($"{ReleaseCount}").Append(CSV_SEP);
             builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
+            builder.Append($"{Fork}").Append(CSV_SEP);
             builder.Append($"{ForksCount}").Append(CSV_SEP);
             builder.Append($"{StarCount}").Append(CSV_SEP);
             builder.Append($"{Watchers}").Append(CSV_SEP);
