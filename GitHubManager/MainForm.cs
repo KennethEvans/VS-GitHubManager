@@ -6,8 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -66,19 +69,23 @@ namespace GitHubManager {
 
         private void CreateClient(Credentials credentials) {
             try {
-                client = new GitHubClient(new ProductHeaderValue(GitHubIdentity));
+                client = new GitHubClient(new Octokit.ProductHeaderValue(GitHubIdentity));
                 if (credentials == null) {
                     CurrentUser = null;
-                    WriteLineInfo("Authentication=None");
+                    WriteLineInfo("AuthenticationType=Not Authenticated");
                     return;
                 }
 
                 client.Credentials = credentials;
+                WriteLineInfo("AuthenticationType=" + credentials.AuthenticationType.ToString());
                 CurrentUser = client.User.Current().GetAwaiter().GetResult();
                 Properties.Settings.Default.UserName = CurrentUser.Name;
                 Properties.Settings.Default.Save();
-                WriteLineInfo($"Authentication={credentials.AuthenticationType}");
                 WriteInfo(GetUserInformation(CurrentUser));
+#if false
+                // DEBUG
+                Test();
+#endif
             } catch (Exception ex) {
                 client = null;
                 Utils.excMsg("Authentication Error ", ex);
@@ -179,6 +186,7 @@ namespace GitHubManager {
                     taskList.Add(GetReleases(client, repo, repos));
                     taskList.Add(GetReadme(client, repo, repos));
                     taskList.Add(GetActivity(client, repo, repos));
+                    taskList.Add(GetParentName(client, repo, repos));
                 }
                 await Task.WhenAll(taskList);
                 StringBuilder builder = new StringBuilder("Repositories"
@@ -196,6 +204,125 @@ namespace GitHubManager {
                 Utils.excMsg(msg, ex);
                 WriteInfo(msg + NL + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Method to get the parent for a repository. Uses REST directly since
+        /// Octokit.Net always returns null for Repository.Client.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="repo"></param>
+        /// <param name="repos"></param>
+        /// <returns></returns>
+        private async Task GetParentName(GitHubClient client, Repo repo, Repository repos) {
+            try {
+                using (var httpClient = new HttpClient()) {
+                    httpClient.BaseAddress = new Uri("https://api.github.com/");
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(GitHubIdentity, "0"));
+                    if (client.Credentials != null) {
+                        // This works for both Oauth or Basic
+                        // (Likely Basic is no longer used and is converted to Oauth)
+                        httpClient.DefaultRequestHeaders.Authorization
+                             = new AuthenticationHeaderValue("Bearer", client.Credentials.Password);
+                    }
+                    string requestUri = "repos/" + repos.Owner.Login + "/" + repos.Name;
+                    HttpResponseMessage response = await httpClient.GetAsync("repos/" + repos.Owner.Login + "/" + repos.Name);
+
+                    if (response.IsSuccessStatusCode) {
+                        Task<string> data = response.Content.ReadAsStringAsync();
+                        if (data != null && !String.IsNullOrEmpty(data.Result)) {
+                            //string json = FormatJsonText(data.Result);
+                            //WriteLineInfo(json);
+                            SimpleRepository repository = JsonSerializer.Deserialize<SimpleRepository>(data.Result);
+                            if (repository == null) {
+                                repo.ParentName = "<Not Found>";
+                                return;
+                            }
+                            if (repository.parent == null) {
+                                repo.ParentName = "<None>";
+                                return;
+                            }
+                            repo.ParentName = repository.parent.full_name;
+                        } else {
+                            repo.ParentName = "<Not Found>";
+                        }
+                    } else {
+                        repo.ParentName = "<" + response.StatusCode + ">";
+                    }
+                }
+            } catch (Exception ex) {
+                WriteLineInfo("Exception getting Product for " + repos.FullName
+                    + NL + ex.Message);
+                repo.ParentName = "<Exception>";
+            }
+        }
+
+        async private void Test() {
+            WriteLineInfo(NL + "Test");
+            try {
+                using (var httpClient = new HttpClient()) {
+                    httpClient.BaseAddress = new Uri("https://api.github.com/");
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("test", "1"));
+                    HttpResponseMessage response = await httpClient.GetAsync("repos/dmoonfire/ant-design-blazor");
+
+                    if (response.IsSuccessStatusCode) {
+                        Task<string> data = response.Content.ReadAsStringAsync();
+                        if (data != null && !String.IsNullOrEmpty(data.Result)) {
+                            string json = FormatJsonText(data.Result);
+                            WriteLineInfo(json);
+                            SimpleRepository repository = JsonSerializer.Deserialize<SimpleRepository>(data.Result);
+                            WriteLineInfo("parent=" + repository.parent.full_name);
+                        } else {
+                            WriteLineInfo("Response is null or empty");
+                        }
+                    } else {
+                        WriteLineInfo("Received " + response.StatusCode);
+                    }
+                }
+#if false
+                string uri = "https://api.github.com/repos/dmoonfire/ant-design-blazor";
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+                request.Credentials = new NetworkCredential(httpClient.Credentials.Login, client.Credentials.Password);
+                request.UserAgent = RequestConstants.UserAgentValue;
+                string content = "<None>";
+                using (var response = (HttpWebResponse)request.GetResponse()) {
+                    using (var stream = response.GetResponseStream()) {
+                        using (var sr = new StreamReader(stream)) {
+                            content = sr.ReadToEnd();
+                        }
+                    }
+                }
+                WriteLineInfo(content);
+#endif
+            } catch (Exception ex) {
+                Utils.excMsg("Test", ex);
+            }
+        }
+
+        static string FormatJsonText(string jsonString) {
+            using var doc = JsonDocument.Parse(
+                jsonString,
+                new JsonDocumentOptions {
+                    AllowTrailingCommas = true
+                }
+            );
+            MemoryStream memoryStream = new MemoryStream();
+            using (
+                var utf8JsonWriter = new Utf8JsonWriter(
+                    memoryStream,
+                    new JsonWriterOptions {
+                        Indented = true
+                    }
+                )
+            ) {
+                doc.WriteTo(utf8JsonWriter);
+            }
+            return new System.Text.UTF8Encoding()
+                .GetString(memoryStream.ToArray());
         }
         #endregion
 
@@ -418,11 +545,17 @@ namespace GitHubManager {
             WriteInfo(GetUserInformation(user));
         }
         #endregion
-    }
 
-    public class Repo {
-        public static readonly string CSV_SEP = ",";
-        public static readonly string[] HEADER = {
+        public class SimpleRepository {
+            public SimpleParent parent { get; set; }
+        }
+        public class SimpleParent {
+            public string full_name { get; set; }
+        }
+
+        public class Repo {
+            public static readonly string CSV_SEP = ",";
+            public static readonly string[] HEADER = {
              "Name",
              "FullName",
              "Description",
@@ -434,6 +567,7 @@ namespace GitHubManager {
              "ReleaseCount",
              "OpenIssuesCount",
              "Fork",
+             "ParentName",
              "ForksCount",
              "StarCount",
              "Watchers",
@@ -442,149 +576,163 @@ namespace GitHubManager {
              "PushedAt",
          };
 
-        public string Name { get; set; }
-        public string FullName { get; set; }
-        public string Description { get; set; }
-        public long Size { get; set; }
-        public bool Private { get; set; }
-        public string Language { get; set; }
-        public LicenseMetadata License { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        public DateTimeOffset? PushedAt { get; set; }
-        public int OpenIssuesCount { get; set; }
-        public bool Fork { get; set; }
-        public int ForksCount { get; set; }
-        public int ReleaseCount { get; set; }
-        public Readme Readme { get; set; }
-        public int StarCount { get; set; } = -1;
-        public int Watchers { get; set; } = -1;
-        public string HomePage { get; set; }
+            public string Name { get; set; }
+            public string FullName { get; set; }
+            public string Description { get; set; }
+            public long Size { get; set; }
+            public bool Private { get; set; }
+            public string Language { get; set; }
+            public LicenseMetadata License { get; set; }
+            public DateTimeOffset CreatedAt { get; set; }
+            public DateTimeOffset UpdatedAt { get; set; }
+            public DateTimeOffset? PushedAt { get; set; }
+            public int OpenIssuesCount { get; set; }
+            public bool Fork { get; set; }
+            public int ForksCount { get; set; }
+            public int ReleaseCount { get; set; }
+            public Readme Readme { get; set; }
+            public int StarCount { get; set; } = -1;
+            public int Watchers { get; set; } = -1;
+            public string HomePage { get; set; }
+            public Repository Parent { get; set; }
+            public string ParentName { get; set; }
 
-        public Repo(Repository repos) {
-            Name = repos.Name;
-            FullName = repos.FullName;
-            Description = repos.Description;
-            Size = repos.Size;
-            Private = repos.Private;
-            License = repos.License;
-            Language = repos.Language;
-            CreatedAt = repos.CreatedAt;
-            UpdatedAt = repos.UpdatedAt;
-            PushedAt = repos.PushedAt;
-            OpenIssuesCount = repos.OpenIssuesCount;
-            Fork = repos.Fork;
-            ForksCount = repos.ForksCount;
-            //HomePage = repos.Homepage;
-        }
+            public Repo(Repository repos) {
+                Name = repos.Name;
+                FullName = repos.FullName;
+                Description = repos.Description;
+                Size = repos.Size;
+                Private = repos.Private;
+                License = repos.License;
+                Language = repos.Language;
+                CreatedAt = repos.CreatedAt;
+                UpdatedAt = repos.UpdatedAt;
+                PushedAt = repos.PushedAt;
+                OpenIssuesCount = repos.OpenIssuesCount;
+                Fork = repos.Fork;
+                ForksCount = repos.ForksCount;
+                //HomePage = repos.Homepage;
+                Parent = repos.Parent;
+                if (Parent != null) ParentName = Parent.FullName;
+            }
 
-        public override string ToString() {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine($"Name={Name}");
-            builder.AppendLine($"    FullName={FullName}");
-            builder.AppendLine($"    Description={Description}");
-            builder.AppendLine($"    Size={Size} KB");
-            builder.AppendLine($"    Private={Private}");
-            builder.AppendLine($"    Language={Language}");
-            if (License != null) {
-                builder.AppendLine($"    License={License.Name}");
-            } else {
-                builder.AppendLine($"    License=<NA>");
+            public override string ToString() {
+                StringBuilder builder = new StringBuilder();
+                builder.AppendLine($"Name={Name}");
+                builder.AppendLine($"    FullName={FullName}");
+                builder.AppendLine($"    Description={Description}");
+                builder.AppendLine($"    Size={Size} KB");
+                builder.AppendLine($"    Private={Private}");
+                builder.AppendLine($"    Language={Language}");
+                if (License != null) {
+                    builder.AppendLine($"    License={License.Name}");
+                } else {
+                    builder.AppendLine($"    License=<NA>");
+                }
+                if (Readme != null) {
+                    builder.AppendLine($"    Readme={Readme.Name}");
+                } else {
+                    builder.AppendLine($"    Readme=<None>");
+                }
+                builder.AppendLine($"    ReleaseCount={ReleaseCount}");
+                builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
+                builder.AppendLine($"    Fork={Fork}");
+                // This appears to always be null
+                //builder.AppendLine($"    Parent={Parent}");
+                builder.AppendLine($"    ParentName={ParentName}");
+                builder.AppendLine($"    ForksCount={ForksCount}");
+                builder.AppendLine($"    StarCount={StarCount}");
+                builder.AppendLine($"    Watchers={Watchers}");
+                //builder.AppendLine($"    HomePage={HomePage}");
+                builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
+                builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
+                if (PushedAt.HasValue) {
+                    builder.AppendLine($"    PushedAt={PushedAt.Value.ToLocalTime()}");
+                } else {
+                    builder.AppendLine($"    PushedAt=Never");
+                }
+                return builder.ToString();
             }
-            if (Readme != null) {
-                builder.AppendLine($"    Readme={Readme.Name}");
-            } else {
-                builder.AppendLine($"    Readme=<None>");
-            }
-            builder.AppendLine($"    ReleaseCount={ReleaseCount}");
-            builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
-            builder.AppendLine($"    Fork={Fork}");
-            builder.AppendLine($"    ForksCount={ForksCount}");
-            builder.AppendLine($"    StarCount={StarCount}");
-            builder.AppendLine($"    Watchers={Watchers}");
-            //builder.AppendLine($"    HomePage={HomePage}");
-            builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
-            builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
-            if (PushedAt.HasValue) {
-                builder.AppendLine($"    PushedAt={PushedAt.Value.ToLocalTime()}");
-            } else {
-                builder.AppendLine($"    PushedAt=Never");
-            }
-            return builder.ToString();
-        }
 
-        public static string CsvHeader() {
-            StringBuilder builder = new StringBuilder();
-            foreach (string col in HEADER) {
-                builder.Append(col).Append(CSV_SEP);
+            public static string CsvHeader() {
+                StringBuilder builder = new StringBuilder();
+                foreach (string col in HEADER) {
+                    builder.Append(col).Append(CSV_SEP);
+                }
+                // Remove the last separator
+                string line = builder.ToString();
+                line = line.Substring(0, line.Length - CSV_SEP.Length);
+                return line;
             }
-            // Remove the last separator
-            string line = builder.ToString();
-            line = line.Substring(0, line.Length - CSV_SEP.Length);
-            return line;
-        }
 
-        public string CsvRow() {
-            StringBuilder builder = new StringBuilder();
-            builder.Append($"{Name}").Append(CSV_SEP);
-            builder.Append($"{FullName}").Append(CSV_SEP);
-            builder.Append($"\"{Description}\"").Append(CSV_SEP);
-            builder.Append($"{Size}").Append(CSV_SEP);
-            builder.Append($"{Private}").Append(CSV_SEP);
-            builder.Append($"{Language}").Append(CSV_SEP);
-            if (License != null) {
-                builder.Append($"{License.Name}").Append(CSV_SEP);
-            } else {
-                builder.Append($"").Append(CSV_SEP);
+            public string CsvRow() {
+                StringBuilder builder = new StringBuilder();
+                builder.Append($"{Name}").Append(CSV_SEP);
+                builder.Append($"{FullName}").Append(CSV_SEP);
+                builder.Append($"\"{Description}\"").Append(CSV_SEP);
+                builder.Append($"{Size}").Append(CSV_SEP);
+                builder.Append($"{Private}").Append(CSV_SEP);
+                builder.Append($"{Language}").Append(CSV_SEP);
+                if (License != null) {
+                    builder.Append($"{License.Name}").Append(CSV_SEP);
+                } else {
+                    builder.Append($"").Append(CSV_SEP);
+                }
+                if (Readme != null) {
+                    builder.Append($"{Readme.Name}").Append(CSV_SEP);
+                } else {
+                    builder.Append($"").Append(CSV_SEP);
+                }
+                builder.Append($"{ReleaseCount}").Append(CSV_SEP);
+                builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
+                builder.Append($"{Fork}").Append(CSV_SEP);
+                if (ParentName != null && ParentName.Equals("<None>")) {
+                    // Leave it blank for <None>
+                    builder.Append($"").Append(CSV_SEP);
+                } else {
+                    builder.Append($"{ParentName}").Append(CSV_SEP);
+                }
+                builder.Append($"{ForksCount}").Append(CSV_SEP);
+                builder.Append($"{StarCount}").Append(CSV_SEP);
+                builder.Append($"{Watchers}").Append(CSV_SEP);
+                builder.Append($"{CreatedAt.ToLocalTime()}").Append(CSV_SEP);
+                builder.Append($"{UpdatedAt.ToLocalTime()}").Append(CSV_SEP);
+                if (PushedAt.HasValue) {
+                    builder.Append($"{PushedAt.Value.ToLocalTime()}").Append(CSV_SEP);
+                } else {
+                    builder.Append($"").Append(CSV_SEP);
+                }
+                // Remove the last separator
+                string line = builder.ToString();
+                line = line.Substring(0, line.Length - CSV_SEP.Length);
+                return line;
             }
-            if (Readme != null) {
-                builder.Append($"{Readme.Name}").Append(CSV_SEP);
-            } else {
-                builder.Append($"").Append(CSV_SEP);
-            }
-            builder.Append($"{ReleaseCount}").Append(CSV_SEP);
-            builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
-            builder.Append($"{Fork}").Append(CSV_SEP);
-            builder.Append($"{ForksCount}").Append(CSV_SEP);
-            builder.Append($"{StarCount}").Append(CSV_SEP);
-            builder.Append($"{Watchers}").Append(CSV_SEP);
-            builder.Append($"{CreatedAt.ToLocalTime()}").Append(CSV_SEP);
-            builder.Append($"{UpdatedAt.ToLocalTime()}").Append(CSV_SEP);
-            if (PushedAt.HasValue) {
-                builder.Append($"{PushedAt.Value.ToLocalTime()}").Append(CSV_SEP);
-            } else {
-                builder.Append($"").Append(CSV_SEP);
-            }
-            // Remove the last separator
-            string line = builder.ToString();
-            line = line.Substring(0, line.Length - CSV_SEP.Length);
-            return line;
-        }
 
-        public static string GetSummary(List<Repo> repoList, string tab = "    ") {
-            StringBuilder builder = new StringBuilder();
-            int nPrivate = 0, nForked = 0, nMissingReadmes = 0, nMissingLicenses = 0,
-                nMissingDescriptions = 0, nOpenIssues = 0, nStars = 0, nWatchers = 0;
-            foreach (Repo repo in repoList) {
-                if (repo.Private) nPrivate++;
-                if (repo.Fork) nForked++;
-                if (repo.Readme == null || String.IsNullOrEmpty(repo.Readme.Name)) nMissingReadmes++;
-                if (repo.License == null || String.IsNullOrEmpty(repo.License.Name)) nMissingLicenses++;
-                if (String.IsNullOrEmpty(repo.Description)) nMissingDescriptions++;
-                if (repo.OpenIssuesCount > 0) nOpenIssues++;
-                nStars += repo.StarCount;
-                nWatchers += repo.Watchers;
+            public static string GetSummary(List<Repo> repoList, string tab = "    ") {
+                StringBuilder builder = new StringBuilder();
+                int nPrivate = 0, nForked = 0, nMissingReadmes = 0, nMissingLicenses = 0,
+                    nMissingDescriptions = 0, nOpenIssues = 0, nStars = 0, nWatchers = 0;
+                foreach (Repo repo in repoList) {
+                    if (repo.Private) nPrivate++;
+                    if (repo.Fork) nForked++;
+                    if (repo.Readme == null || String.IsNullOrEmpty(repo.Readme.Name)) nMissingReadmes++;
+                    if (repo.License == null || String.IsNullOrEmpty(repo.License.Name)) nMissingLicenses++;
+                    if (String.IsNullOrEmpty(repo.Description)) nMissingDescriptions++;
+                    if (repo.OpenIssuesCount > 0) nOpenIssues++;
+                    nStars += repo.StarCount;
+                    nWatchers += repo.Watchers;
+                }
+                builder.Append(tab).AppendLine($"Repositories={repoList.Count}");
+                builder.Append(tab).AppendLine($"Private={nPrivate}");
+                builder.Append(tab).AppendLine($"Forked={nForked}");
+                builder.Append(tab).AppendLine($"Missing Descriptions={nMissingDescriptions}");
+                builder.Append(tab).AppendLine($"Missing Readme's={nMissingReadmes}");
+                builder.Append(tab).AppendLine($"Missing Licenses={nMissingLicenses}");
+                builder.Append(tab).AppendLine($"Open Issues={nOpenIssues}");
+                builder.Append(tab).AppendLine($"Stars={nStars}");
+                builder.Append(tab).AppendLine($"Watchers={nWatchers}");
+                return builder.ToString();
             }
-            builder.Append(tab).AppendLine($"Repositories={repoList.Count}");
-            builder.Append(tab).AppendLine($"Private={nPrivate}");
-            builder.Append(tab).AppendLine($"Forked={nForked}");
-            builder.Append(tab).AppendLine($"Missing Descriptions={nMissingDescriptions}");
-            builder.Append(tab).AppendLine($"Missing Readme's={nMissingReadmes}");
-            builder.Append(tab).AppendLine($"Missing Licenses={nMissingLicenses}");
-            builder.Append(tab).AppendLine($"Open Issues={nOpenIssues}");
-            builder.Append(tab).AppendLine($"Stars={nStars}");
-            builder.Append(tab).AppendLine($"Watchers={nWatchers}");
-            return builder.ToString();
         }
     }
 }
