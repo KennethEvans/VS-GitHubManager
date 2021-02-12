@@ -64,10 +64,9 @@ namespace GitHubManager {
                         return;
                     }
 
-            //EnableUI(true);
         }
 
-        private void CreateClient(Credentials credentials) {
+        private async void CreateClient(Credentials credentials) {
             try {
                 client = new GitHubClient(new Octokit.ProductHeaderValue(GitHubIdentity));
                 if (credentials == null) {
@@ -78,12 +77,14 @@ namespace GitHubManager {
 
                 client.Credentials = credentials;
                 WriteLineInfo("AuthenticationType=" + credentials.AuthenticationType.ToString());
-                CurrentUser = client.User.Current().GetAwaiter().GetResult();
+                CurrentUser = await client.User.Current();
                 Properties.Settings.Default.UserName = CurrentUser.Name;
                 Properties.Settings.Default.Save();
+                await GetCurrentUserInformation(client);
                 WriteInfo(GetUserInformation(CurrentUser));
 #if false
                 // DEBUG
+                await GetCurrentUserInformation(client);
                 Test();
 #endif
             } catch (Exception ex) {
@@ -125,18 +126,20 @@ namespace GitHubManager {
             builder.AppendLine($"Email={user.Email}");
             builder.AppendLine($"Company={user.Company}");
             builder.AppendLine($"Blog={user.Blog}");
+            builder.AppendLine($"Bio={user.Bio}");
             builder.AppendLine($"HtmlUrl={user.HtmlUrl}");
             builder.AppendLine($"Url={user.Url}");
             builder.AppendLine($"Location={user.Location}");
             builder.AppendLine($"AvatarUrl={user.AvatarUrl}");
-            builder.AppendLine($"DiskUsage={user.DiskUsage}");
             builder.AppendLine($"Followers={user.Followers}");
             builder.AppendLine($"Following={user.Following}");
             builder.AppendLine($"Collaborators={user.Collaborators}");
             builder.AppendLine($"PublicRepos={user.PublicRepos}");
+            builder.AppendLine($"PublicGists={user.PublicGists}");
+            builder.AppendLine($"The following, if zero, may be inaccurate, owing to access restrictions:");
+            builder.AppendLine($"DiskUsage={user.DiskUsage}");
             builder.AppendLine($"OwnedPrivateRepos={user.OwnedPrivateRepos}");
             builder.AppendLine($"TotalPrivateRepos={user.TotalPrivateRepos}");
-            builder.AppendLine($"PublicGists={user.PublicGists}");
             builder.AppendLine($"PrivateGists={user.PrivateGists}");
             return builder.ToString();
         }
@@ -207,6 +210,49 @@ namespace GitHubManager {
         }
 
         /// <summary>
+        /// Gets current user information via REST.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        private async Task GetCurrentUserInformation(GitHubClient client) {
+            try {
+                using (var httpClient = new HttpClient()) {
+                    httpClient.BaseAddress = new Uri("https://api.github.com/");
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(GitHubIdentity, "0"));
+                    if (client.Credentials != null) {
+                        // This works for both Oauth or Basic
+                        // (Likely Basic is no longer used and is converted to Oauth)
+                        httpClient.DefaultRequestHeaders.Authorization
+                             = new AuthenticationHeaderValue("Bearer", client.Credentials.Password);
+                    }
+                    string requestUri = "user";
+                    HttpResponseMessage response = await httpClient.GetAsync(requestUri);
+
+                    if (response.IsSuccessStatusCode) {
+                        Task<string> data = response.Content.ReadAsStringAsync();
+                        if (data != null && !String.IsNullOrEmpty(data.Result)) {
+                            string json = FormatJsonText(data.Result);
+                            WriteLineInfo(json);
+                            // TODO Handle the JSON
+                            //SimpleRepository repository = JsonSerializer.Deserialize<SimpleRepository>(data.Result);
+
+                        } else {
+                            WriteLineInfo("GetCurrentUserInformation: No data");
+                        }
+                    } else {
+                        WriteLineInfo("GetCurrentUserInformation returned " + response.StatusCode);
+                    }
+                }
+            } catch (Exception ex) {
+                string msg = "GetCurrentUserInformation: Exception occurred";
+                Utils.excMsg(msg, ex);
+                WriteLineInfo(msg + NL + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Method to get the parent for a repository. Uses REST directly since
         /// Octokit.Net always returns null for Repository.Client.
         /// </summary>
@@ -228,7 +274,7 @@ namespace GitHubManager {
                              = new AuthenticationHeaderValue("Bearer", client.Credentials.Password);
                     }
                     string requestUri = "repos/" + repos.Owner.Login + "/" + repos.Name;
-                    HttpResponseMessage response = await httpClient.GetAsync("repos/" + repos.Owner.Login + "/" + repos.Name);
+                    HttpResponseMessage response = await httpClient.GetAsync(requestUri);
 
                     if (response.IsSuccessStatusCode) {
                         Task<string> data = response.Content.ReadAsStringAsync();
@@ -259,6 +305,9 @@ namespace GitHubManager {
             }
         }
 
+        /// <summary>
+        /// Test method for using REST.
+        /// </summary>
         async private void Test() {
             WriteLineInfo(NL + "Test");
             try {
@@ -408,12 +457,7 @@ namespace GitHubManager {
                 WriteLineInfo(NL + "Get Repositories: No client defined");
                 return;
             }
-            Credentials credentials = client.Credentials;
-            if (credentials == null) {
-                WriteLineInfo(NL + "Get Repositories: Cannot determine credentials");
-                return;
-            }
-            if (credentials.AuthenticationType == AuthenticationType.Anonymous) {
+            if (CurrentUser == null) {
                 WriteLineInfo(NL + "Get Repositories: Must be authenticated");
                 return;
             }
@@ -586,10 +630,10 @@ namespace GitHubManager {
             public DateTimeOffset CreatedAt { get; set; }
             public DateTimeOffset UpdatedAt { get; set; }
             public DateTimeOffset? PushedAt { get; set; }
-            public int OpenIssuesCount { get; set; }
+            public int OpenIssuesCount { get; set; } = -1;
             public bool Fork { get; set; }
-            public int ForksCount { get; set; }
-            public int ReleaseCount { get; set; }
+            public int ForksCount { get; set; } = -1;
+            public int ReleaseCount { get; set; } = -1;
             public Readme Readme { get; set; }
             public int StarCount { get; set; } = -1;
             public int Watchers { get; set; } = -1;
