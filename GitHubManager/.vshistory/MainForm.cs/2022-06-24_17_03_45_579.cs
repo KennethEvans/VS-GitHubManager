@@ -131,9 +131,9 @@ namespace GitHubManager {
             builder.AppendLine($"Url={user.Url}");
             builder.AppendLine($"Location={user.Location}");
             builder.AppendLine($"AvatarUrl={user.AvatarUrl}");
-            builder.AppendLine($"Collaborators={user.Collaborators}");
             builder.AppendLine($"Followers={user.Followers}");
             builder.AppendLine($"Following={user.Following}");
+            builder.AppendLine($"Collaborators={user.Collaborators}");
             builder.AppendLine($"PublicRepos={user.PublicRepos}");
             builder.AppendLine($"PublicGists={user.PublicGists}");
             builder.AppendLine($"The following, if zero, may be inaccurate, owing to access restrictions:");
@@ -170,9 +170,7 @@ namespace GitHubManager {
             try {
                 IReadOnlyList < User > collaborators =
                     await client.Repository.Collaborator.GetAll(repos.Id);
-                if (collaborators != null) {
-                    repo.CollaboratorsCount = collaborators.Count;
-                }
+                if (collaborators != null) repo.CollaboratorsCount = collaborators.Count;
             } catch (Exception) {
                 repo.Readme = null;
             }
@@ -386,9 +384,9 @@ namespace GitHubManager {
             return new System.Text.UTF8Encoding()
                 .GetString(memoryStream.ToArray());
         }
-#endregion
+        #endregion
 
-#region Event Handlers
+        #region Event Handlers
         private void OnFormLoad(object sender, EventArgs e) {
             BeginInvoke((MethodInvoker)ShowLoginForm);
         }
@@ -487,7 +485,7 @@ namespace GitHubManager {
                 return;
             }
             string userName;
-            string msg = "Enter Username:";
+            string msg = "Enter ";
             InputDialog dlg = new InputDialog("Repository Name", msg,
                 Properties.Settings.Default.RepositoryOwner);
             DialogResult res = dlg.ShowDialog();
@@ -601,7 +599,7 @@ namespace GitHubManager {
             User user = await client.User.Get(userName);
             WriteInfo(GetUserInformation(user));
         }
-#endregion
+        #endregion
 
         public class SimpleRepository {
             public SimpleParent parent { get; set; }
@@ -622,8 +620,8 @@ namespace GitHubManager {
              "License",
              "Readme",
              "ReleaseCount",
-             "CollaboratorsCount",
              "OpenIssuesCount",
+             "CollaboratorsCount",
              "Fork",
              "ParentName",
              "ForksCount",
@@ -645,7 +643,6 @@ namespace GitHubManager {
             public DateTimeOffset UpdatedAt { get; set; }
             public DateTimeOffset? PushedAt { get; set; }
             public int OpenIssuesCount { get; set; } = -1;
-            public int CollaboratorsCount { get; set; } = -1;
             public bool Fork { get; set; }
             public int ForksCount { get; set; } = -1;
             public int ReleaseCount { get; set; } = -1;
@@ -694,7 +691,6 @@ namespace GitHubManager {
                     builder.AppendLine($"    Readme=<None>");
                 }
                 builder.AppendLine($"    ReleaseCount={ReleaseCount}");
-                builder.AppendLine($"    Collaborators={CollaboratorsCount}");
                 builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
                 builder.AppendLine($"    Fork={Fork}");
                 // This appears to always be null
@@ -703,6 +699,7 @@ namespace GitHubManager {
                 builder.AppendLine($"    ForksCount={ForksCount}");
                 builder.AppendLine($"    StarCount={StarCount}");
                 builder.AppendLine($"    Watchers={Watchers}");
+                builder.AppendLine($"    Collaborators={CollaboratorsCount}");
                 //builder.AppendLine($"    HomePage={HomePage}");
                 builder.AppendLine($"    CreatedAt={CreatedAt.ToLocalTime()}");
                 builder.AppendLine($"    UpdatedAt={UpdatedAt.ToLocalTime()}");
@@ -744,7 +741,6 @@ namespace GitHubManager {
                     builder.Append($"").Append(CSV_SEP);
                 }
                 builder.Append($"{ReleaseCount}").Append(CSV_SEP);
-                builder.Append($"{CollaboratorsCount}").Append(CSV_SEP);
                 builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
                 builder.Append($"{Fork}").Append(CSV_SEP);
                 if (ParentName != null && ParentName.Equals("<None>")) {
@@ -756,6 +752,7 @@ namespace GitHubManager {
                 builder.Append($"{ForksCount}").Append(CSV_SEP);
                 builder.Append($"{StarCount}").Append(CSV_SEP);
                 builder.Append($"{Watchers}").Append(CSV_SEP);
+                builder.Append($"{CollaboratorsCount}").Append(CSV_SEP);
                 builder.Append($"{CreatedAt.ToLocalTime()}").Append(CSV_SEP);
                 builder.Append($"{UpdatedAt.ToLocalTime()}").Append(CSV_SEP);
                 if (PushedAt.HasValue) {
@@ -793,6 +790,7 @@ namespace GitHubManager {
                 builder.Append(tab).AppendLine($"Open Issues={nOpenIssues}");
                 builder.Append(tab).AppendLine($"Stars={nStars}");
                 builder.Append(tab).AppendLine($"Watchers={nWatchers}");
+                builder.Append(tab).AppendLine($"Collaborators={nCollaborators}");
                 return builder.ToString();
             }
         }

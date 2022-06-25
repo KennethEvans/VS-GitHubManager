@@ -7,9 +7,6 @@
     <Description>If this program works, it was written by Kenneth Evans.</Description>
     <Company>kenevans.net</Company>
     <Copyright>Copyright © Kenneth Evans 2021</Copyright>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
-    <Version>1.1.0.0</Version>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Authors>GitHub Manager</Authors>
     <Product>GitHub Manager</Product>

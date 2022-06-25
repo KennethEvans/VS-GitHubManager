@@ -487,7 +487,7 @@ namespace GitHubManager {
                 return;
             }
             string userName;
-            string msg = "Enter Username:";
+            string msg = "Enter Username";
             InputDialog dlg = new InputDialog("Repository Name", msg,
                 Properties.Settings.Default.RepositoryOwner);
             DialogResult res = dlg.ShowDialog();

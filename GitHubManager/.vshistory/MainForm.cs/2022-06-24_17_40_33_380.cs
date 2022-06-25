@@ -172,7 +172,10 @@ namespace GitHubManager {
                     await client.Repository.Collaborator.GetAll(repos.Id);
                 if (collaborators != null) {
                     repo.CollaboratorsCount = collaborators.Count;
-                }
+                    foreach (User user in collaborators) {
+                        System.Diagnostics.Debug.WriteLine($"user.Name={user.Name}");
+                    }
+                        }
             } catch (Exception) {
                 repo.Readme = null;
             }
@@ -487,7 +490,7 @@ namespace GitHubManager {
                 return;
             }
             string userName;
-            string msg = "Enter Username:";
+            string msg = "Enter ";
             InputDialog dlg = new InputDialog("Repository Name", msg,
                 Properties.Settings.Default.RepositoryOwner);
             DialogResult res = dlg.ShowDialog();

@@ -7,15 +7,16 @@
     <Description>If this program works, it was written by Kenneth Evans.</Description>
     <Company>kenevans.net</Company>
     <Copyright>Copyright © Kenneth Evans 2021</Copyright>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
-    <Version>1.1.0.0</Version>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Authors>GitHub Manager</Authors>
     <Product>GitHub Manager</Product>
     <PackageIcon>GitHubManager.ico</PackageIcon>
     <ApplicationIcon>GitHubManager.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Octokit" Version="0.48.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Utils">
@@ -48,10 +49,6 @@
       <PackagePath></PackagePath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Octokit" Version="0.51.0" />
   </ItemGroup>
 
 </Project>

@@ -131,7 +131,6 @@ namespace GitHubManager {
             builder.AppendLine($"Url={user.Url}");
             builder.AppendLine($"Location={user.Location}");
             builder.AppendLine($"AvatarUrl={user.AvatarUrl}");
-            builder.AppendLine($"Collaborators={user.Collaborators}");
             builder.AppendLine($"Followers={user.Followers}");
             builder.AppendLine($"Following={user.Following}");
             builder.AppendLine($"PublicRepos={user.PublicRepos}");
@@ -170,9 +169,7 @@ namespace GitHubManager {
             try {
                 IReadOnlyList < User > collaborators =
                     await client.Repository.Collaborator.GetAll(repos.Id);
-                if (collaborators != null) {
-                    repo.CollaboratorsCount = collaborators.Count;
-                }
+                if (collaborators != null) repo.CollaboratorsCount = collaborators.Count;
             } catch (Exception) {
                 repo.Readme = null;
             }
@@ -386,9 +383,9 @@ namespace GitHubManager {
             return new System.Text.UTF8Encoding()
                 .GetString(memoryStream.ToArray());
         }
-#endregion
+        #endregion
 
-#region Event Handlers
+        #region Event Handlers
         private void OnFormLoad(object sender, EventArgs e) {
             BeginInvoke((MethodInvoker)ShowLoginForm);
         }
@@ -487,7 +484,7 @@ namespace GitHubManager {
                 return;
             }
             string userName;
-            string msg = "Enter Username:";
+            string msg = "Enter ";
             InputDialog dlg = new InputDialog("Repository Name", msg,
                 Properties.Settings.Default.RepositoryOwner);
             DialogResult res = dlg.ShowDialog();
@@ -601,7 +598,7 @@ namespace GitHubManager {
             User user = await client.User.Get(userName);
             WriteInfo(GetUserInformation(user));
         }
-#endregion
+        #endregion
 
         public class SimpleRepository {
             public SimpleParent parent { get; set; }
@@ -793,6 +790,7 @@ namespace GitHubManager {
                 builder.Append(tab).AppendLine($"Open Issues={nOpenIssues}");
                 builder.Append(tab).AppendLine($"Stars={nStars}");
                 builder.Append(tab).AppendLine($"Watchers={nWatchers}");
+                builder.Append(tab).AppendLine($"Collaborators={nCollaborators}");
                 return builder.ToString();
             }
         }
