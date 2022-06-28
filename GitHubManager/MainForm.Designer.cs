@@ -32,12 +32,14 @@ namespace GitHubManager {
             this.textBox = new System.Windows.Forms.TextBox();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.toolStripMenuItemFile = new System.Windows.Forms.ToolStripMenuItem();
+            this.loginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRepositories = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemGetUserRepositories = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemGetUserInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRateLimits = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemSaveCsv = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.showLogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemAbout = new System.Windows.Forms.ToolStripMenuItem();
@@ -104,11 +106,11 @@ namespace GitHubManager {
             // textBox
             // 
             this.textBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.textBox.Location = new System.Drawing.Point(3, 52);
+            this.textBox.Location = new System.Drawing.Point(3, 55);
             this.textBox.Multiline = true;
             this.textBox.Name = "textBox";
             this.textBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox.Size = new System.Drawing.Size(1570, 834);
+            this.textBox.Size = new System.Drawing.Size(1570, 831);
             this.textBox.TabIndex = 3;
             // 
             // menuStrip
@@ -119,23 +121,32 @@ namespace GitHubManager {
             this.toolStripMenuItemHelp});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(1576, 49);
+            this.menuStrip.Size = new System.Drawing.Size(1576, 52);
             this.menuStrip.TabIndex = 4;
             this.menuStrip.Text = "menuStrip1";
             // 
             // toolStripMenuItemFile
             // 
             this.toolStripMenuItemFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.loginToolStripMenuItem,
             this.toolStripMenuItemRepositories,
             this.toolStripMenuItemGetUserRepositories,
             this.toolStripMenuItemGetUserInfo,
             this.toolStripMenuItemRateLimits,
             this.toolStripMenuItemSaveCsv,
             this.toolStripSeparator1,
+            this.showLogToolStripMenuItem,
             this.toolStripMenuItemExit});
             this.toolStripMenuItemFile.Name = "toolStripMenuItemFile";
-            this.toolStripMenuItemFile.Size = new System.Drawing.Size(87, 45);
+            this.toolStripMenuItemFile.Size = new System.Drawing.Size(87, 48);
             this.toolStripMenuItemFile.Text = "File";
+            // 
+            // loginToolStripMenuItem
+            // 
+            this.loginToolStripMenuItem.Name = "loginToolStripMenuItem";
+            this.loginToolStripMenuItem.Size = new System.Drawing.Size(536, 54);
+            this.loginToolStripMenuItem.Text = "Login";
+            this.loginToolStripMenuItem.Click += new System.EventHandler(this.OnLoginClick);
             // 
             // toolStripMenuItemRepositories
             // 
@@ -177,6 +188,13 @@ namespace GitHubManager {
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(533, 6);
             // 
+            // showLogToolStripMenuItem
+            // 
+            this.showLogToolStripMenuItem.Name = "showLogToolStripMenuItem";
+            this.showLogToolStripMenuItem.Size = new System.Drawing.Size(536, 54);
+            this.showLogToolStripMenuItem.Text = "Show Error Log...";
+            this.showLogToolStripMenuItem.Click += new System.EventHandler(this.OnShowLogClick);
+            // 
             // toolStripMenuItemExit
             // 
             this.toolStripMenuItemExit.Name = "toolStripMenuItemExit";
@@ -189,7 +207,7 @@ namespace GitHubManager {
             this.toolStripMenuItemHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemAbout});
             this.toolStripMenuItemHelp.Name = "toolStripMenuItemHelp";
-            this.toolStripMenuItemHelp.Size = new System.Drawing.Size(104, 45);
+            this.toolStripMenuItemHelp.Size = new System.Drawing.Size(104, 48);
             this.toolStripMenuItemHelp.Text = "Help";
             // 
             // toolStripMenuItemAbout
@@ -240,6 +258,8 @@ namespace GitHubManager {
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemSaveCsv;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemGetUserRepositories;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemGetUserInfo;
+        private System.Windows.Forms.ToolStripMenuItem showLogToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loginToolStripMenuItem;
     }
 }
 

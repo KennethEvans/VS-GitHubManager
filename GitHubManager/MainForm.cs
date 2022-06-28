@@ -32,6 +32,7 @@ namespace GitHubManager {
         private User CurrentUser;
         private string currentRepositoryOwner;
         private List<Repo> repoList;
+        private List<string> log = new List<string>();
 
 
         public MainForm() {
@@ -55,6 +56,7 @@ namespace GitHubManager {
         }
 
         private void ShowLoginForm() {
+            client = null;
             while (client == null)
                 using (var dialog = new LoginForm())
                     if (dialog.ShowDialog(this) == DialogResult.OK) {
@@ -131,7 +133,6 @@ namespace GitHubManager {
             builder.AppendLine($"Url={user.Url}");
             builder.AppendLine($"Location={user.Location}");
             builder.AppendLine($"AvatarUrl={user.AvatarUrl}");
-            builder.AppendLine($"Collaborators={user.Collaborators}");
             builder.AppendLine($"Followers={user.Followers}");
             builder.AppendLine($"Following={user.Following}");
             builder.AppendLine($"PublicRepos={user.PublicRepos}");
@@ -146,12 +147,14 @@ namespace GitHubManager {
 
         #region Async Tasks
         private async Task GetReleases(GitHubClient client, Repo repo, Repository repos) {
+            repo.ReleaseCount = 0;
             try {
                 // Note, using Owner.Login, not Owner.Name
                 IReadOnlyList<Release> releases =
                     await client.Repository.Release.GetAll(repos.Owner.Login, repos.Name);
-                repo.ReleaseCount = releases.Count;
-            } catch (Exception) {
+                repo.ReleaseCount = releases != null ? releases.Count : 0;
+            } catch (Exception ex) {
+                log.Add($"{repo.Name}: GetReleases: {ex?.ToString() + NL}");
                 repo.ReleaseCount = -1;
             }
         }
@@ -161,31 +164,93 @@ namespace GitHubManager {
                 Readme readme =
                     await client.Repository.Content.GetReadme(repos.Id);
                 repo.Readme = readme;
-            } catch (Exception) {
+            } catch (Octokit.NotFoundException) {
+                // Expected if there is not one
+                repo.Readme = null;
+            } catch (Exception ex) {
+                // Unexpected
+                log.Add($"{repo.Name}: GetReadme: {ex?.ToString() + NL}");
                 repo.Readme = null;
             }
         }
 
         private async Task GetCollaborators(GitHubClient client, Repo repo, Repository repos) {
+            repo.CollaboratorCount = 0;
             try {
-                IReadOnlyList < User > collaborators =
+                IReadOnlyList<User> collaborators =
                     await client.Repository.Collaborator.GetAll(repos.Id);
-                if (collaborators != null) {
-                    repo.CollaboratorsCount = collaborators.Count;
+                repo.CollaboratorCount = collaborators != null ? collaborators.Count : 0;
+            } catch (Exception ex) {
+                log.Add($"{repo.Name}: GetCollabortors: {ex?.ToString() + NL}");
+                repo.CollaboratorCount = -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the commits and from those the contributors and if Dependabot
+        /// was used.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="repo"></param>
+        /// <param name="repos"></param>
+        /// <returns></returns>
+        private async Task GetCommits(GitHubClient client, Repo repo, Repository repos) {
+            repo.CommitCount = 0;
+            repo.ContributorCount = 0;
+            repo.Dependabot = false;
+            try {
+                IReadOnlyList<GitHubCommit> commits =
+                    await client.Repository.Commit.GetAll(repos.Id);
+                repo.CommitCount = commits != null ? commits.Count : 0;
+                if (commits != null) {
+                    repo.CommitCount = commits.Count;
+                    try {
+                        List<string> authors = new List<string>();
+                        foreach (GitHubCommit commit in commits) {
+                            if (commit.Author != null) {
+                                string login = commit.Author.Login;
+                                if (login != null && !authors.Contains(login)) {
+                                    authors.Add(login);
+                                }
+                            }
+                        }
+                        repo.ContributorCount = authors.Count;
+                        foreach (string author in authors) {
+                            //System.Diagnostics.Debug.WriteLine($"name={repo.Name} {author}");
+                            if (author.Contains("dependabot")) {
+                                repo.Dependabot = true;
+                                // Don't break if want to use debug statement
+                                break;
+                            }
+                        }
+                    } catch (Exception ex) {
+                        log.Add($"{repo.Name}: GetCommits: {ex?.ToString() + NL}");
+                        repo.ContributorCount = -1;
+                    }
                 }
-            } catch (Exception) {
-                repo.Readme = null;
+            } catch (Exception ex) {
+                log.Add($"{repo.Name}: GetCommits: {ex?.ToString() + NL}");
+                repo.CommitCount = -1;
+                repo.ContributorCount = -1;
             }
         }
 
         private async Task GetActivity(GitHubClient client, Repo repo, Repository repos) {
+            repo.StarCount = 0;
+            repo.Watchers = 0;
             try {
                 IReadOnlyList<User> stargazers = await client.Activity.Starring.GetAllStargazers(repos.Owner.Login, repos.Name);
                 if (stargazers != null) repo.StarCount = stargazers.Count;
+            } catch (Exception ex) {
+                log.Add($"{repo.Name}: GetActivity: {ex?.ToString() + NL}");
+                repo.StarCount = 0;
+            }
+            try {
                 IReadOnlyList<User> watchers = await client.Activity.Watching.GetAllWatchers(repos.Owner.Login, repos.Name);
                 if (watchers != null) repo.Watchers = watchers.Count;
-            } catch (Exception) {
-                repo.Readme = null;
+            } catch (Exception ex) {
+                log.Add($"{repo.Name}: GetActivity: {ex?.ToString() + NL}");
+                repo.Watchers = 0;
             }
         }
 
@@ -194,17 +259,21 @@ namespace GitHubManager {
                 repoList = new List<Repo>();
                 currentRepositoryOwner = userName;
                 Repo repo;
-                List<Task> taskList = new List<Task>();
+                List<Task> taskList= new List<Task>();
                 foreach (Repository repos in repositories) {
+                    taskList.Clear();
                     repo = new Repo(repos);
                     repoList.Add(repo);
+                    taskList = new List<Task>();
                     taskList.Add(GetReleases(client, repo, repos));
                     taskList.Add(GetReadme(client, repo, repos));
                     taskList.Add(GetCollaborators(client, repo, repos));
+                    taskList.Add(GetCommits(client, repo, repos));
                     taskList.Add(GetActivity(client, repo, repos));
                     taskList.Add(GetParentName(client, repo, repos));
+                    await Task.WhenAll(taskList);
+                    //await Task.Delay(1000);
                 }
-                await Task.WhenAll(taskList);
                 StringBuilder builder = new StringBuilder("Repositories"
                     + $" ({repositories.Count})" + NL);
                 int n = 0;
@@ -386,9 +455,9 @@ namespace GitHubManager {
             return new System.Text.UTF8Encoding()
                 .GetString(memoryStream.ToArray());
         }
-#endregion
+        #endregion
 
-#region Event Handlers
+        #region Event Handlers
         private void OnFormLoad(object sender, EventArgs e) {
             BeginInvoke((MethodInvoker)ShowLoginForm);
         }
@@ -444,6 +513,22 @@ namespace GitHubManager {
             }
         }
 
+        private void OnShowLogClick(object sender, EventArgs e) {
+            StringBuilder builder = new StringBuilder(NL + "Log" + NL);
+            if (log.Count == 0) {
+                builder.AppendLine("No entries");
+            } else {
+                foreach (string item in log) {
+                    builder.AppendLine(item);
+                }
+            }
+            Utils.infoMsg(builder.ToString());
+        }
+
+        private void OnLoginClick(object sender, EventArgs e) {
+            BeginInvoke((MethodInvoker)ShowLoginForm);
+        }
+
         private async void OnGetRateLimitsClick(object sender, EventArgs e) {
             if (client == null) {
                 WriteLineInfo(NL + "Get Rate Limits: No client defined");
@@ -474,11 +559,18 @@ namespace GitHubManager {
                 WriteLineInfo(NL + "Get Repositories: Must be authenticated");
                 return;
             }
+            // Clear the log so the messages will only be from this call
+            log.Clear();
             WriteLineInfo(NL + "Searching for Repositories for "
                 + CurrentUser.Login);
             // This will get them all (no paging)
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForCurrent();
             await GetRepositories(CurrentUser.Login, repositories);
+            if (log.Count > 0) {
+                WriteLineInfo(NL + $"{log.Count} errors encountered searching for Repositories for "
+                    + CurrentUser.Login + "." + NL
+                    + "See the Error Log for details.");
+            }
         }
 
         private async void OnGetUserRepositoriesClick(object sender, EventArgs e) {
@@ -505,9 +597,16 @@ namespace GitHubManager {
             } else {
                 return;
             }
+            // Clear the log so the messages will only be from this call
+            log.Clear();
             // This will get them all (no paging)
             IReadOnlyList<Repository> repositories = await client.Repository.GetAllForUser(userName);
             await GetRepositories(userName, repositories);
+            if (log.Count > 0) {
+                WriteLineInfo(NL + $"{log.Count} errors encountered searching for Repositories for "
+                    + userName + "." + NL
+                    + "See the Error Log for details.");
+            }
         }
 
         /// <summary>
@@ -601,7 +700,7 @@ namespace GitHubManager {
             User user = await client.User.Get(userName);
             WriteInfo(GetUserInformation(user));
         }
-#endregion
+        #endregion
 
         public class SimpleRepository {
             public SimpleParent parent { get; set; }
@@ -622,7 +721,10 @@ namespace GitHubManager {
              "License",
              "Readme",
              "ReleaseCount",
-             "CollaboratorsCount",
+             "CollaboratorCount",
+             "CommitCount",
+             "ContributorCount",
+             "Dependabot",
              "OpenIssuesCount",
              "Fork",
              "ParentName",
@@ -644,14 +746,17 @@ namespace GitHubManager {
             public DateTimeOffset CreatedAt { get; set; }
             public DateTimeOffset UpdatedAt { get; set; }
             public DateTimeOffset? PushedAt { get; set; }
-            public int OpenIssuesCount { get; set; } = -1;
-            public int CollaboratorsCount { get; set; } = -1;
+            public int OpenIssuesCount { get; set; } = -100;
+            public int CollaboratorCount { get; set; } = -100;
+            public int CommitCount { get; set; } = -100;
+            public int ContributorCount { get; set; } = -100;
+            public bool Dependabot { get; set; } = false;
             public bool Fork { get; set; }
-            public int ForksCount { get; set; } = -1;
-            public int ReleaseCount { get; set; } = -1;
+            public int ForksCount { get; set; } = -100;
+            public int ReleaseCount { get; set; } = -100;
             public Readme Readme { get; set; }
-            public int StarCount { get; set; } = -1;
-            public int Watchers { get; set; } = -1;
+            public int StarCount { get; set; } = -100;
+            public int Watchers { get; set; } = -100;
             public string HomePage { get; set; }
             public Repository Parent { get; set; }
             public string ParentName { get; set; }
@@ -694,7 +799,10 @@ namespace GitHubManager {
                     builder.AppendLine($"    Readme=<None>");
                 }
                 builder.AppendLine($"    ReleaseCount={ReleaseCount}");
-                builder.AppendLine($"    Collaborators={CollaboratorsCount}");
+                builder.AppendLine($"    CollaboratorCount={CollaboratorCount}");
+                builder.AppendLine($"    ContributorCount={ContributorCount}");
+                builder.AppendLine($"    CommitCount={CommitCount}");
+                builder.AppendLine($"    Dependabot={Dependabot}");
                 builder.AppendLine($"    OpenIssuesCount={OpenIssuesCount}");
                 builder.AppendLine($"    Fork={Fork}");
                 // This appears to always be null
@@ -744,7 +852,15 @@ namespace GitHubManager {
                     builder.Append($"").Append(CSV_SEP);
                 }
                 builder.Append($"{ReleaseCount}").Append(CSV_SEP);
-                builder.Append($"{CollaboratorsCount}").Append(CSV_SEP);
+                builder.Append($"{CollaboratorCount}").Append(CSV_SEP);
+                builder.Append($"{CommitCount}").Append(CSV_SEP);
+                builder.Append($"{ContributorCount}").Append(CSV_SEP);
+                if (!Dependabot) {
+                    // Leave it blank for <None>
+                    builder.Append($"").Append(CSV_SEP);
+                } else {
+                    builder.Append($"{Dependabot}").Append(CSV_SEP);
+                }
                 builder.Append($"{OpenIssuesCount}").Append(CSV_SEP);
                 builder.Append($"{Fork}").Append(CSV_SEP);
                 if (ParentName != null && ParentName.Equals("<None>")) {
@@ -772,8 +888,7 @@ namespace GitHubManager {
             public static string GetSummary(List<Repo> repoList, string tab = "    ") {
                 StringBuilder builder = new StringBuilder();
                 int nPrivate = 0, nForked = 0, nMissingReadmes = 0, nMissingLicenses = 0,
-                    nMissingDescriptions = 0, nOpenIssues = 0, nStars = 0, nWatchers = 0,
-                    nCollaborators = 0;
+                    nMissingDescriptions = 0, nOpenIssues = 0, nStars = 0, nWatchers = 0;
                 foreach (Repo repo in repoList) {
                     if (repo.Private) nPrivate++;
                     if (repo.Fork) nForked++;
